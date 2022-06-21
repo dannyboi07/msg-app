@@ -1,0 +1,150 @@
+package websocket
+
+import (
+	"fmt"
+	"msg-app/backend/types"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/gorilla/websocket"
+)
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return r.Header.Get("Origin") == "http://localhost:3000"
+	},
+}
+
+// type wsConn struct {
+// 	Conn *websocket.Conn
+// }
+
+// var wsClientsById = make(map[int64]*websocket.Conn)
+// var wsClientsByConn = make(map[*websocket.Conn]int64)
+
+var wsClientsById sync.Map
+
+// var wsClientsByConn sync.Map
+
+func Handler(w http.ResponseWriter, r *http.Request) {
+	userDetails := r.Context().Value("userDetails").(jwt.MapClaims)
+
+	userId := int64(userDetails["UserId"].(float64))
+	// if _, userPresent := wsClientsById[userId]; userPresent {
+	// 	http.Error(w, "User already connected", http.StatusForbidden)
+	// 	return
+	// }
+	if _, userPresent := wsClientsById.Load(userId); userPresent {
+		http.Error(w, "User already connected", http.StatusForbidden)
+		return
+	}
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, "Error establishing Websocket connection", http.StatusInternalServerError)
+		fmt.Println(err)
+		return
+	}
+	conn.SetReadLimit(4096)
+	// wsClientsById[userId] = conn
+	// wsClientsByConn[conn] = userId
+	wsClientsById.Store(userId, conn)
+	// wsClientsByConn.Store(conn, userId)
+
+	fmt.Println("client here", userId)
+	go wsConnHandler(conn, userId)
+}
+
+func wsConnHandler(conn *websocket.Conn, userId int64) {
+	closeChildChan := make(chan bool, 2)
+	closeParentChan := make(chan bool, 2)
+	var message types.WsMessage
+
+	go wsConnPinger(userId, closeChildChan, closeParentChan)
+forLoop:
+	for {
+		// messageType, message, err := conn.ReadMessage()
+		select {
+		case <-closeParentChan:
+			fmt.Println("parent closing")
+			break forLoop
+		default:
+			err := conn.ReadJSON(&message)
+			if err != nil {
+				fmt.Println(err)
+				break forLoop
+			} else if message.From == nil || message.To == nil || message.Message == nil {
+				// Closing WS conn in case of missing fields
+				fmt.Println("Missing fields in Websocket message sent by client")
+				break forLoop
+			}
+			if message.From == nil || message.To == nil || message.Message == nil {
+				break forLoop
+			}
+			// Verifying whether the "from" field in WS message sent from client side actually exists in the connection list.
+			// A more reliable alternative is querying the DB for user existence based on userId. Going with this since it's
+			// an in-memory lookup and faster.
+			if _, userFromPresent := wsClientsById.Load(*message.From); userFromPresent {
+				userToSendConn, _ := wsClientsById.Load(*message.To)
+				if userToSendConn != nil {
+					fmt.Println("sending msg")
+					userToSendConnWs := userToSendConn.(*websocket.Conn)
+					userToSendConnWs.WriteJSON(&message)
+				}
+			} else {
+				fmt.Println("breaking when msg is sent", userFromPresent, *message.From)
+				break forLoop
+			}
+		}
+	}
+	// userIdByConn := wsClientsByConn[conn]
+	// delete(wsClientsById, userIdByConn)
+	// delete(wsClientsByConn, conn)
+	conn.Close()
+	closeChildChan <- true
+	// userIdByConn, _ := wsClientsByConn.Load(conn)
+	// fmt.Println("useridbyconn", userIdByConn)
+	fmt.Println("Deleting user conn by id", userId)
+	wsClientsById.Delete(userId)
+	// wsClientsByConn.Delete(conn)
+}
+
+func wsConnPinger(userId int64, closeChild chan bool, closeParent chan bool) {
+	for {
+		time.Sleep(time.Second * 10)
+		select {
+		case <-closeChild:
+			fmt.Println("pinger closing chan", userId)
+			return
+		default:
+			connAny, _ := wsClientsById.Load(userId)
+			if connAny == nil {
+				closeParent <- true
+				fmt.Println("pinger closing err 1", userId)
+				return
+			}
+			conn := connAny.(*websocket.Conn)
+			err := conn.WriteMessage(websocket.PingMessage, []byte{})
+			// var from int64 = 123
+			// var to int64 = 456
+			// message := "Pinging ya"
+			// conn.WriteJSON(types.WsMessage{From: &from, To: &to, Message: &message})
+			fmt.Println("pinged", userId)
+			if err != nil {
+				closeParent <- true
+				fmt.Println("pinger closing err 2", userId)
+				return
+			}
+		}
+	}
+}
+
+func TestHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(wsClientsById)
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, "%v", wsClientsById)
+}
