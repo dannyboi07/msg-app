@@ -1,0 +1,204 @@
+import { createSlice } from "@reduxjs/toolkit";
+
+/* 
+Map of the state for this:
+[
+    {
+        contactId: ,
+        messages: [
+            {
+                from: ,
+                to: ,
+                message: text,
+                time: ,
+            }
+        ],
+        lastAcc: Latest time in seconds this a particular object such as this was touched by the user,
+        // So be used while scanning this state to clear "cache" at regular intervals 
+    }
+]
+*/
+
+export const chatSlice = createSlice({
+	name: "chats",
+	initialState: [],
+	reducers: {
+		addMsg: (state, action) => {
+			return state.map((msgsObj) =>
+				msgsObj.contactId === action.payload.contactId
+					? {
+							contactId: msgsObj.contactId,
+							messages: [
+								...msgsObj.messages,
+								action.payload.message,
+							],
+							lastAcc: Date.now(),
+					  }
+					: msgsObj,
+			);
+			// return  state.allMessages.map((chatsObj) =>
+			// 		chatsObj.contactId === action.payload.contactId
+			// 			? {
+			// 					contactId: chatsObj.contactId,
+			// 					messages: [
+			// 						...chatsObj.messages, // [{msg1}, {msg2}], destruct will {msg1}, {msg2}
+			// 						action.payload,
+			// 					],
+			// 					lastAcc: Date.now(),
+			// 			  }
+			// 			: chatsObj,
+			// 	),
+		},
+		addMsgs: (state, action) => {
+			return [
+				...state,
+				{
+					contactId: action.payload.contactId,
+					messages: action.payload.messages,
+					lastAcc: Date.now(),
+				},
+			];
+		},
+		clearCache: (state, action) => {
+			const newAllMsgsState = [];
+			for (let i = 0; i < state.length; i++) {
+				const msgsObj = state[i];
+				const dateNow = Date.now();
+				if (
+					msgsObj.contactId !== action.payload.contactId &&
+					msgsObj.lastAcc + 60 < dateNow
+				) {
+					newAllMsgsState.push({
+						...msgsObj,
+						messages: msgsObj.messages.slice(-5),
+					});
+				} else if (
+					msgsObj.contactId !== action.payload.contactId &&
+					msgsObj.lastAcc + 30 < dateNow
+				) {
+					continue;
+				} else {
+					newAllMsgsState.push(msgsObj);
+				}
+			}
+			return newAllMsgsState;
+		},
+	},
+});
+
+export const { addMsg, addMsgs, clearCache } = chatSlice.actions;
+// export const selectContacts = (state) => state.chats.contacts;
+// export const selectActiveChat = (state) => state.chats.activeChat;
+// export const selectMessages = (state) => state.chats
+// export const selectMessages = (contactId) => (state) => {
+//     for (let i = 0; i < state.chats.length; i++) {
+//         if (state.chats[i].contactId === contactId) {
+//             return state.chats[i]
+//         }
+//     }
+// };
+export default chatSlice.reducer;
+
+// addMsg: (state, action) => {
+//     return {
+//         ...state,
+//         [action.payload.contactId]: { // Only include friend's Id in the dispatcher, not in the sent WS msg
+//             messages: [
+//                 ...state.contactId.messages,
+//                 action.payload.message
+//             ],
+//             lastAcc: Date.now()
+//         }
+//     }
+// },
+// initContacts: (state, action) => {
+// 	return {
+// 		...state,
+// 		contacts: action.payload,
+// 		allMessages: action.payload.map((contact) => {
+// 			return {
+// 				contactId: contact.user_id,
+// 				messages: [],
+// 				lastAcc: Date.now(),
+// 			};
+// 		}),
+// 	};
+// },
+// setActiveChat: (state, action) => {
+// 	return {
+// 		...state,
+// 		activeChat: action.payload,
+// 	};
+// },
+// addChat: (state, action) => {
+// 	return {
+// 		...state,
+// 		allMessages: state.allMessages.push({
+// 			contactId: action.payload.contactId,
+// 			messages: [],
+// 			lastAcc: Date.now(),
+// 		}),
+// 	};
+// },
+// addMsg: (state, action) => {
+// 	return {
+// 		...state,
+// 		allMessages: state.allMessages.map((chatsObj) =>
+// 			chatsObj.contactId === action.payload.contactId
+// 				? {
+// 						contactId: chatsObj.contactId,
+// 						messages: [
+// 							...chatsObj.messages, // [{msg1}, {msg2}], destruct will {msg1}, {msg2}
+// 							action.payload,
+// 						],
+// 						lastAcc: Date.now(),
+// 				  }
+// 				: chatsObj,
+// 		),
+// 	};
+// },
+// addMsgs: (state, action) => {
+// 	console.log(action.payload);
+// 	return {
+// 		...state,
+// 		allMessages: state.allMessages.map((chatsObj) =>
+// 			chatsObj.contactId === action.payload.contactId
+// 				? {
+// 						contactId: chatsObj.contactId,
+// 						messages: action.payload.messages,
+// 						lastAcc: Date.now(),
+// 				  }
+// 				: chatsObj,
+// 		),
+// 	};
+// },
+// clearCache: (state, action) => {
+// 	const newAllMsgsState = [];
+// 	for (let i = 0; i < state.allMessages.length; i++) {
+// 		const chatObj = state.allMessages[i];
+// 		const dateNow = Date.now();
+// 		if (
+// 			chatObj.contactId !== action.payload.contactId &&
+// 			chatObj.lastAcc + 60 < dateNow
+// 		) {
+// 			newAllMsgsState.push({
+// 				// contactId: chatObj.contactId,
+// 				...chatObj,
+// 				messages: chatObj.messages.slice(-5),
+// 				// lastAcc: chatObj.lastAcc,
+// 			});
+// 		} else if (
+// 			chatObj.contactId !== action.payload.contactId &&
+// 			chatObj.lastAcc + 30 < dateNow
+// 		) {
+// 			continue;
+// 		} else {
+// 			newAllMsgsState.push(chatObj);
+// 		}
+// 	}
+// 	return {
+// 		...state,
+// 		allMessages: newAllMsgsState,
+// 	};
+// 	// return newAllMsgsState;
+// },

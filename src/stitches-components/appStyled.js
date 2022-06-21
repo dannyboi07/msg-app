@@ -1,8 +1,8 @@
 import { styled } from "@stitches/react";
 
 const StyledApp = styled("div", {
-	minWidth: "100vw",
-	minHeight: "100vh",
+	minWidth: "100%",
+	minHeight: "100%",
 });
 
 export { StyledApp };

@@ -27,6 +27,7 @@ function Login() {
 			userDetails.email.trim() !== "" &&
 			userDetails.password.trim() !== ""
 		) {
+            // const user_tz = Intl.DateTimeFormat().resolvedOptions().timeZone
 			fetch(`${url}/login`, {
 				method: "POST",
 				headers: {
@@ -36,6 +37,7 @@ function Login() {
 				body: JSON.stringify({
 					email: userDetails.email,
 					password: userDetails.password,
+                    // user_tz
 				}),
 			}).then((response) => {
 				if (response.status === 200) {

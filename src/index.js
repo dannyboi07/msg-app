@@ -7,11 +7,11 @@ import "./index.css";
 import React from "react";
 
 ReactDOM.render(
-	<React.StrictMode>
+
 		<Provider store={store}>
 			<App />
 		</Provider>
-	</React.StrictMode>,
+,
 	document.getElementById("root"),
 );
 

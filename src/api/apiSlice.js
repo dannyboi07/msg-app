@@ -29,7 +29,7 @@ export const api = createApi({
 			}),
 		}),
 		wsConnection: builder.query({
-			queryFn: () => {
+			queryFn: async () => {
 				return { data: null };
 			},
 			async onCacheEntryAdded(
@@ -48,9 +48,8 @@ export const api = createApi({
 						});
 					};
 					let wsPinger;
-					ws.addEventListener("message", listener);
-					ws.onopen(
-						(wsPinger = setInterval(() => {
+					ws.addEventListener("open", () => {
+						wsPinger = setInterval(() => {
 							ws.send(
 								JSON.stringify({
 									type: "ping",
@@ -59,18 +58,23 @@ export const api = createApi({
 									message: "",
 								}),
 							);
-						}, 30000)),
-					);
-					ws.onclose(() => {
-                        console.log("Closing websocket")
-                        clearInterval(wsPinger)
+						}, 60000);
+					});
+					ws.addEventListener("message", listener);
+					ws.addEventListener("close", () => {
+						console.log("Closing websocket");
+						clearInterval(wsPinger);
 						ws.removeEventListener("message", listener);
+					});
+					ws.addEventListener("error", () => {
+						console.log("Websocket error");
+						clearInterval(wsPinger);
 					});
 				} catch (err) {
 					console.error(err);
 				}
 				await cacheEntryRemoved;
-				ws.close();
+				// ws.close();
 
 				// const socket = io(`${url}/ws`, {
 				//     transports: ["websocket"]

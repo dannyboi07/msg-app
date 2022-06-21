@@ -1,26 +1,30 @@
 import { configureStore } from "@reduxjs/toolkit";
 // import counterReducer from "../features/counter/counterSlice";
 import userReducer from "../slices/userSlice";
+import contactsReducer from "../slices/contactsSlice";
+import chatReducer from "../slices/chatSlice";
 import toastReducer from "../slices/toastSlice";
 import { api } from "../api/apiSlice";
 
-const userDetails = JSON.parse(localStorage.getItem("msg-app-user-details"));
+// const userDetails = JSON.parse(localStorage.getItem("msg-app-user-details"));
 
-const preloadedState = {
-    toast: {
-        type: "info",
-        message: null
-    },
-    user: userDetails ? userDetails : null
-}
+// const preloadedState = {
+//     toast: {
+//         type: "info",
+//         message: null
+//     },
+//     user: userDetails ? userDetails : null
+// }
 
 export const store = configureStore({
 	reducer: {
 		// counter: counterReducer,
         toast: toastReducer,
         user: userReducer,
+        contacts: contactsReducer,
+        chats: chatReducer,
 		[api.reducerPath]: api.reducer,
 	},
-    preloadedState,
+    // preloadedState,
 	middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(api.middleware),
 });

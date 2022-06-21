@@ -24,7 +24,7 @@ function App() {
 	return (
 		<ToastProvider swipeDirection="right">
 			<StyledApp>
-				<button
+				{/* <button
 					onClick={() =>
 						dispatch(
 							setToast({
@@ -35,7 +35,7 @@ function App() {
 					}
 				>
 					Set Toast
-				</button>
+				</button> */}
 				<Router>
 					<Routes>
 						<Route path="/auth" element={<UnAuthRouter />}>
