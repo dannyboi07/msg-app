@@ -23,31 +23,26 @@ function scroll(ref, setMsgQueryOffset, isLoading) {
 	}
 }
 
-function ParseDate(dateTime) {
-	const months = [
-		"Janunary",
-		"February",
-		"March",
-		"April",
-		"June",
-		"July",
-		"August",
-		"September",
-		"October",
-		"November",
-		"December",
-	];
-	// const d = new Date();
-	const date = dateTime.getDate();
-	const month = months[dateTime.getMonth()];
-	const year = dateTime.getFullYear();
-	const hour = dateTime.getHours();
-	const minutes = dateTime.getMinutes();
-
-	return {
-		date: `${date} ${month} ${year}`,
-		time: `${hour}:${minutes}`,
-	};
+function parseSectionTime(msgTime) {
+	const dateTime = new Date(msgTime);
+	const date = dateTime.toLocaleString("en-US", {
+		dateStyle: "long",
+	});
+	const time = dateTime.toLocaleString("en-US", {
+		hour: "numeric",
+		minute: "numeric",
+		hour12: true,
+	});
+	const currDate = new Date();
+	if (
+		dateTime.getMonth() === currDate.getMonth() &&
+		dateTime.getFullYear() === currDate.getFullYear()
+	) {
+		if (dateTime.getDate() === currDate.getDate()) return { dateTime, date: "Today", time };
+		else if (dateTime.getDate() === currDate.getDate() - 1)
+			return { dateTime, date: "Yesterday", time };
+	}
+	return { dateTime, date, time };
 }
 
 function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
@@ -138,15 +133,26 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 					)}
 				{contactMsgs &&
 					contactMsgs.messages.map((message, i) => {
-						const dateTime = new Date(message.time);
-						const date = dateTime.toLocaleString("en-US", {
-							dateStyle: "long",
-						});
-						const time = dateTime.toLocaleString("en-US", {
-							hour: "numeric",
-							minute: "numeric",
-							hour12: true,
-						});
+						// const dateTime = new Date(message.time);
+						// let date = dateTime.toLocaleString("en-US", {
+						// 	dateStyle: "long",
+						// });
+						// const time = dateTime.toLocaleString("en-US", {
+						// 	hour: "numeric",
+						// 	minute: "numeric",
+						// 	hour12: true,
+						// });
+						// const currDate = new Date();
+						// if (
+						// 	dateTime.getMonth() === currDate.getMonth() &&
+						// 	dateTime.getFullYear() === currDate.getFullYear()
+						// ) {
+						// 	if (dateTime.getDate() === currDate.getDate())
+						// 		date = "Today";
+						// 	else if (dateTime.getDate() === currDate.getDate() - 1)
+						// 		date = "Yesterday";
+						// }
+						const dateTime = parseSectionTime(message.time);
 						const rcvdMsg = message.from === activeContactId;
 						if (i === 0) {
 							return (
@@ -157,7 +163,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 											backgroundColor: theme.accCol,
 										}}
 									>
-										{date}
+										{dateTime.date}
 									</StyledMsgDate>
 									<StyledMsg
 										css={{
@@ -171,7 +177,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 										}}
 									>
 										<p>{message.text}</p>
-										<span>{time}</span>
+										<span>{dateTime.time}</span>
 										{rcvdMsg ? (
 											<MsgFlareLeft
 												css={{
@@ -192,7 +198,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 							);
 						} else {
 							if (
-								dateTime.toLocaleDateString() >
+								dateTime.dateTime.toLocaleDateString() >
 								new Date(
 									contactMsgs.messages[i - 1].time,
 								).toLocaleDateString()
@@ -205,7 +211,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 												alignSelf: "center",
 											}}
 										>
-											{date}
+											{dateTime.date}
 										</StyledMsgDate>
 										<StyledMsg
 											css={{
@@ -220,7 +226,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 										>
 											<p>{message.text}</p>
 
-											<span>{time}</span>
+											<span>{dateTime.time}</span>
 											{rcvdMsg ? (
 												<MsgFlareLeft
 													css={{
@@ -261,7 +267,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 											>
 												<p>{message.text}</p>
 
-												<span>{time}</span>
+												<span>{dateTime.time}</span>
 											</StyledMsg>
 										</React.Fragment>
 									);
@@ -281,7 +287,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 										key={message.message_id}
 									>
 										<p>{message.text}</p>
-										<span>{time}</span>
+										<span>{dateTime.time}</span>
 										{rcvdMsg ? (
 											<MsgFlareLeft
 												css={{

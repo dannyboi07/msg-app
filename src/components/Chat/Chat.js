@@ -71,6 +71,7 @@ function Chat({ userId, wsConn }) {
                 justifyContent: "center",
                 alignItems: "center",
                 backgroundColor: theme.primCol,
+                borderLeft: `1px solid ${theme.accCol}`,
             }}>
 				<h1>Select a chat</h1>
 			</StyledChat>
@@ -80,6 +81,7 @@ function Chat({ userId, wsConn }) {
 	return (
 		<StyledChat css={{
             backgroundColor: theme.primCol,
+            borderLeft: `1px solid ${theme.accCol}`,
         }}>
 			<ChatProfile wsConn={wsConn} />
 			{activeContactId && (

@@ -4,7 +4,7 @@ const StyledHome = styled("div", {
 	width: "100%",
 	minHeight: "100vh",
 	display: "flex",
-	border: "1px solid red",
+	// border: "1px solid red",
 });
 
 const StyledContactList = styled("div", {
@@ -60,7 +60,7 @@ const StyledChat = styled("div", {
     flexGrow: 1,
 	minHeight: "100%",
 	maxHeight: "100vh",
-	border: "1px solid black",
+	// border: "1px solid black",
 	display: "flex",
 	flexDirection: "column",
 

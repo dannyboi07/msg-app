@@ -152,7 +152,7 @@ const StyledMsgInputCtn = styled("div", {
 	//minHeight: 40,
 	height: 45,
 	// padding: "0.25em 0",
-	border: "1px solid black",
+	// border: "1px solid black",
 	display: "flex",
 	alignItems: "center",
 
