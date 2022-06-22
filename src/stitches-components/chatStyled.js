@@ -1,19 +1,35 @@
-import { styled } from "@stitches/react";
+import { keyframes, styled } from "@stitches/react";
 
 const StyledMsgCtn = styled("div", {
-	// flexGrow: "1",
-	position: "relative",
-	height: "100%",
+	// flexShrink: 3,
+	flexGrow: "1",
+	minWidth: 0,
+	// maxHeight: "100%",
+	// height: "100%",
 	display: "flex",
-	flexDirection: "column",
-	padding: "0.25em 2em 1em",
+	alignItems: "flex-end",
+	overflow: "auto",
+	// flexDirection: "column",
 	// justifyContent: "flex-end",
-	overflowY: "auto",
 
+	"& > div.viewport-ctn": {
+		minWidth: "100%",
+		height: "fit-content",
+		maxHeight: "100%",
+		padding: "0.25em 2em 1em",
+		display: "flex",
+		flexDirection: "column",
+		overflow: "auto",
+		border: "1px solid blue",
+	},
 	// "& > *:first-child": {
 	//     marginBottom: "calc(100% - 30px)"
 	// }
 });
+
+// const StyledMsgCtn = styled("div", {
+
+// })
 
 const StyledMsg = styled("div", {
 	position: "relative",
@@ -36,24 +52,93 @@ const StyledMsg = styled("div", {
 	border: "1px solid black",
 });
 
+const animLoadBg = keyframes({
+	"100%": {
+		transform: "translateX(100%)",
+	},
+	// "0%": {
+	//     backgroundPosition: "left"
+	// },
+	// "100%": {
+	//     backgroundPosition: "right"
+	// },
+	// "100%": {
+	//     backgroundPosition: "left"
+	// }
+});
+
+// const StyledLoadingBg = styled("div", {
+//     height: "100%",
+//     background: "linear-gradient(to right, gray, lightgray)",
+//     backgroundSize: "100% 100%",
+//     animation: `${animLoadBg} 3s infinite alternate`,
+// })
+
+const StyledLoadingMsg = styled("div", {
+	position: "relative",
+	width: "70%",
+	height: 150,
+	margin: "0.5em 0",
+	padding: "0.75em 1em",
+	display: "flex",
+	flexDirection: "column",
+    justifyContent: "space-around",
+	alignItems: "flex-end",
+	border: "1px solid black",
+
+	"& > div:not(:last-child)": {
+		margin: "4px 0",
+		width: "100%",
+		height: 20,
+		borderRadius: 2.5,
+		overflow: "hidden",
+
+		"&> div": {
+			width: "100%",
+			height: "100%",
+			position: "relative",
+			backgroundColor: "#DDDBDD",
+			overflow: "hidden",
+
+			"&::after": {
+				position: "absolute",
+				content: "",
+				top: 0,
+				right: 0,
+				bottom: 0,
+				left: 0,
+				transform: "translateX(-100%)",
+				background:
+					// "linear-gradient(135deg, rgba(255,255,255, 0) 0, rgba(255,255,255, 0) 20%, rgba(255,255,255, 0.7) 60%, rgba(255,255,255, 0))",
+					"linear-gradient(90deg, rgba(255,255,255, 0) 0, rgba(255,255,255, 0.2) 20%, rgba(255,255,255, 0.5) 60%, rgba(255,255,255, 0))",
+				animation: `${animLoadBg} 3s infinite`,
+			},
+		},
+	},
+
+    "& > div:nth-child(4)": {
+        width: 50,
+    }
+});
+
 const StyledMsgFlare = styled("div", {
 	position: "absolute",
-    top: -1,
+	top: -1,
 	width: 12.5,
 	height: 15,
-    backgroundColor: "Black",
+	backgroundColor: "Black",
 });
 
 const MsgFlareLeft = styled(StyledMsgFlare, {
-    left: -12.5,
+	left: -12.5,
 	clipPath: "polygon(100% 0, 0 0, 100% 100%)",
-    borderRadius: "0.25em 0 0 0"
+	borderRadius: "0.25em 0 0 0",
 });
 
 const MsgFlareRight = styled(StyledMsgFlare, {
-    right: -12.5,
+	right: -12.5,
 	clipPath: "polygon(100% 0, 0 0, 0 100%)",
-    borderRadius: "0 0.25em 0 0"
+	borderRadius: "0 0.25em 0 0",
 });
 
 const StyledMsgDate = styled("span", {
@@ -99,7 +184,7 @@ const StyledMsgInputCtn = styled("div", {
 });
 
 const StyledChatProfile = styled("div", {
-	height: 80,
+	minHeight: 70,
 	border: "1px solid black",
 	display: "flex",
 	alignItems: "center",
@@ -108,6 +193,8 @@ const StyledChatProfile = styled("div", {
 export {
 	StyledMsgCtn,
 	StyledMsg,
+	StyledLoadingMsg,
+	// StyledLoadingBg,
 	StyledMsgDate,
 	StyledMsgInputCtn,
 	StyledChatProfile,

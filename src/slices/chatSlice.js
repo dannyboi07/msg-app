@@ -50,11 +50,39 @@ export const chatSlice = createSlice({
 			// 	),
 		},
 		addMsgs: (state, action) => {
+			const reversedMsgs = action.payload.messages.reverse();
+			console.log(reversedMsgs);
+			return state.map((chatsObj) =>
+				chatsObj.contactId === action.payload.contactId
+					? {
+							contactId: chatsObj.contactId,
+							messages: [
+								...reversedMsgs,
+								...chatsObj.messages,
+							],
+							lastAcc: Date.now(),
+					  }
+					: chatsObj,
+			);
+			// return state.map((chatsObj) => {
+			// 	console.log(chatsObj);
+			// 	if (chatsObj.contactId === action.payload.contactId) {
+			// 		for (let i = 0; i < action.payload.messages.length; i++) {
+			// 			chatsObj.messages.unshift(action.payload.messages[i]);
+			// 		}
+			// 		return chatsObj;
+			// 	} else return chatsObj;
+			// });
+		},
+		createMsgsChat: (state, action) => {
+            console.log(action.payload);
 			return [
 				...state,
 				{
 					contactId: action.payload.contactId,
-					messages: action.payload.messages,
+                    messages: [
+                        ...action.payload.messages.reverse()
+                    ],
 					lastAcc: Date.now(),
 				},
 			];
@@ -86,7 +114,8 @@ export const chatSlice = createSlice({
 	},
 });
 
-export const { addMsg, addMsgs, clearCache } = chatSlice.actions;
+export const { addMsg, addMsgs, createMsgsChat, clearCache } =
+	chatSlice.actions;
 // export const selectContacts = (state) => state.chats.contacts;
 // export const selectActiveChat = (state) => state.chats.activeChat;
 // export const selectMessages = (state) => state.chats

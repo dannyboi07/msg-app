@@ -4,10 +4,23 @@ import { useSelector } from "react-redux";
 import {
 	StyledMsgCtn,
 	StyledMsg,
+	StyledLoadingMsg,
+	// StyledLoadingBg,
 	StyledMsgDate,
 	MsgFlareLeft,
 	MsgFlareRight,
 } from "../../stitches-components/chatStyled";
+
+function scroll(ref, setMsgQueryOffset, isLoading) {
+	// When using a non exact comparison (>/<), this will trigger the setState for every pixel change below that limit, for eg 40
+	// which in turn will trigger multiple queries based on the query logic residing in the parent component.
+	// isLoading is an indicator that the query is loading, using that to wait until the query is completed to send the next query.
+	// Only trigger when scrollTop space is less than 40 pixels and when a previous query has been completed - when isLoading is false
+	if (ref.current.scrollTop < 40 && !isLoading) {
+		console.log("reached top");
+		setMsgQueryOffset((prev) => prev + 10);
+	}
+}
 
 function ParseDate(dateTime) {
 	const months = [
@@ -36,7 +49,7 @@ function ParseDate(dateTime) {
 	};
 }
 
-function MsgDisplay({ activeContactId }) {
+function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 	const msgCtnRef = useRef(null);
 	const scrollToBottomRef = useRef(null);
 	const contactMsgs = useSelector((state) =>
@@ -53,7 +66,7 @@ function MsgDisplay({ activeContactId }) {
 			msgCtnRef.current.scrollHeight -
 				msgCtnRef.current.clientHeight -
 				msgCtnRef.current.scrollTop <
-				300
+				200
 		) {
 			scrollToBottomRef.current.scrollIntoView({ behavior: "smooth" });
 		}
@@ -68,56 +81,66 @@ function MsgDisplay({ activeContactId }) {
 	// }, [contactMsgs]);
 
 	return (
-		<StyledMsgCtn ref={msgCtnRef}>
-			{contactMsgs &&
-				contactMsgs.messages.map((message, i) => {
-					const dateTime = new Date(message.time);
-					const date = dateTime.toLocaleString("en-US", {
-						dateStyle: "long",
-					});
-					const time = dateTime.toLocaleString("en-US", {
-						hour: "numeric",
-						minute: "numeric",
-						hour12: true,
-					});
-					const rcvdMsg = message.from === activeContactId;
-					if (i === 0) {
-						return (
-							<React.Fragment key={message.message_id}>
-								<StyledMsgDate
-									css={{
-										alignSelf: "center",
-									}}
-								>
-									{date}
-								</StyledMsgDate>
-								<StyledMsg
-									css={{
-										alignSelf: rcvdMsg
-											? "flex-start"
-											: "flex-end",
-										borderRadius: rcvdMsg
-											? "0 0.4em 0.4em 0.4em"
-											: "0.4em 0 0.4em 0.4em",
-									}}
-								>
-									<p>{message.text}</p>
-									<span>{time}</span>
-									{rcvdMsg ? (
-										<MsgFlareLeft />
-									) : (
-										<MsgFlareRight />
-									)}
-								</StyledMsg>
-							</React.Fragment>
-						);
-					} else {
-						if (
-							dateTime.toLocaleDateString() >
-							new Date(
-								contactMsgs.messages[i - 1].time,
-							).toLocaleDateString()
-						) {
+		<StyledMsgCtn>
+			<div
+				className="viewport-ctn"
+				onScroll={() => scroll(msgCtnRef, setMsgQueryOffset, isLoading)}
+				ref={msgCtnRef}
+			>
+				{isLoading &&
+					[0, 0, 0, 0, 0].map((_, i) =>
+						i % 2 === 0 ? (
+							<StyledLoadingMsg
+								key={i}
+								css={{
+									alignSelf: "flex-end",
+								}}
+							>
+								<div>
+									<div />
+								</div>
+								<div>
+									<div />
+								</div>
+								<div>
+									<div />
+								</div>
+								<div>
+									<div />
+								</div>
+								<MsgFlareRight />
+							</StyledLoadingMsg>
+						) : (
+							<StyledLoadingMsg key={i}>
+								<div>
+									<div />
+								</div>
+								<div>
+									<div />
+								</div>
+								<div>
+									<div />
+								</div>
+								<div>
+									<div />
+								</div>
+								<MsgFlareLeft />
+							</StyledLoadingMsg>
+						),
+					)}
+				{contactMsgs &&
+					contactMsgs.messages.map((message, i) => {
+						const dateTime = new Date(message.time);
+						const date = dateTime.toLocaleString("en-US", {
+							dateStyle: "long",
+						});
+						const time = dateTime.toLocaleString("en-US", {
+							hour: "numeric",
+							minute: "numeric",
+							hour12: true,
+						});
+						const rcvdMsg = message.from === activeContactId;
+						if (i === 0) {
 							return (
 								<React.Fragment key={message.message_id}>
 									<StyledMsgDate
@@ -138,7 +161,6 @@ function MsgDisplay({ activeContactId }) {
 										}}
 									>
 										<p>{message.text}</p>
-
 										<span>{time}</span>
 										{rcvdMsg ? (
 											<MsgFlareLeft />
@@ -150,53 +172,93 @@ function MsgDisplay({ activeContactId }) {
 							);
 						} else {
 							if (
-								message.from ===
-								contactMsgs.messages[i - 1].from
+								dateTime.toLocaleDateString() >
+								new Date(
+									contactMsgs.messages[i - 1].time,
+								).toLocaleDateString()
 							) {
 								return (
 									<React.Fragment key={message.message_id}>
+										<StyledMsgDate
+											css={{
+												alignSelf: "center",
+											}}
+										>
+											{date}
+										</StyledMsgDate>
 										<StyledMsg
 											css={{
 												alignSelf: rcvdMsg
 													? "flex-start"
 													: "flex-end",
-												borderRadius:
-													"0.4em 0.4em 0.4em 0.4em",
+												borderRadius: rcvdMsg
+													? "0 0.4em 0.4em 0.4em"
+													: "0.4em 0 0.4em 0.4em",
 											}}
 										>
 											<p>{message.text}</p>
 
 											<span>{time}</span>
+											{rcvdMsg ? (
+												<MsgFlareLeft />
+											) : (
+												<MsgFlareRight />
+											)}
 										</StyledMsg>
 									</React.Fragment>
 								);
+							} else {
+								if (
+									message.from ===
+									contactMsgs.messages[i - 1].from
+								) {
+									return (
+										<React.Fragment
+											key={message.message_id}
+										>
+											<StyledMsg
+												css={{
+													alignSelf: rcvdMsg
+														? "flex-start"
+														: "flex-end",
+													borderRadius:
+														"0.4em 0.4em 0.4em 0.4em",
+												}}
+											>
+												<p>{message.text}</p>
+
+												<span>{time}</span>
+											</StyledMsg>
+										</React.Fragment>
+									);
+								}
+								return (
+									<StyledMsg
+										css={{
+											alignSelf: rcvdMsg
+												? "flex-start"
+												: "flex-end",
+											borderRadius: rcvdMsg
+												? "0 0.4em 0.4em 0.4em"
+												: "0.4em 0 0.4em 0.4em",
+											marginTop: "0.75em",
+										}}
+										key={message.message_id}
+									>
+										<p>{message.text}</p>
+										<span>{time}</span>
+										{rcvdMsg ? (
+											<MsgFlareLeft />
+										) : (
+											<MsgFlareRight />
+										)}
+									</StyledMsg>
+								);
 							}
-							return (
-								<StyledMsg
-									css={{
-										alignSelf: rcvdMsg
-											? "flex-start"
-											: "flex-end",
-										borderRadius: rcvdMsg
-											? "0 0.4em 0.4em 0.4em"
-											: "0.4em 0 0.4em 0.4em",
-										marginTop: "0.75em",
-									}}
-									key={message.message_id}
-								>
-									<p>{message.text}</p>
-									<span>{time}</span>
-									{rcvdMsg ? (
-										<MsgFlareLeft />
-									) : (
-										<MsgFlareRight />
-									)}
-								</StyledMsg>
-							);
 						}
-					}
-				})}
-			<div ref={scrollToBottomRef} />
+					})}
+				<div ref={scrollToBottomRef} />
+			</div>
 		</StyledMsgCtn>
 	);
 }

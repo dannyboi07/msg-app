@@ -7,11 +7,13 @@ axios.defaults.baseURL = "http://localhost:8080/api";
 
 export function useLazyAxios(axiosParams) {
 	const dispatch = useDispatch();
-	const [response, setResponse] = useState(null);
-	const [isLoading, setIsLoading] = useState(true);
+	const [response, setResponse] = useState(undefined); // Backend sends null when paginated queries have nothing more to return
+	const [isLoading, setIsLoading] = useState(true);   // Taking adv of undefined to diff between null sent by server and null set on client
 	const [error, setError] = useState(null);
 
 	async function fetchData(params) {
+		setIsLoading(true);
+		setError(null);
 		try {
 			const res = await axios.request(params);
 			setResponse(res.data);
@@ -24,13 +26,13 @@ export function useLazyAxios(axiosParams) {
 				}),
 			);
 		} finally {
-            setIsLoading(false);
-        }
+			setIsLoading(false);
+		}
 	}
 
-    function lazyFetch() {
-        fetchData(axiosParams)
-    }
+	function lazyFetch() {
+		fetchData(axiosParams);
+	}
 
-    return { lazyFetch, response, isLoading, error }
+	return { lazyFetch, response, isLoading, error };
 }

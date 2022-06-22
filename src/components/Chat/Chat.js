@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useLazyAxios } from "../../hooks/useLazyAxios";
-import { addMsgs } from "../../slices/chatSlice";
+import { addMsgs, createMsgsChat } from "../../slices/chatSlice";
 import { selectActiveContact } from "../../slices/contactsSlice";
 // import { addMsg } from "../../slices/chatSlice";
 import { StyledMsgInputCtn } from "../../stitches-components/chatStyled";
@@ -11,30 +11,44 @@ import MsgDisplay from "./MsgDisplay";
 
 function Chat({ userId, wsConn }) {
 	const [msgInput, setMsgInput] = useState("");
+	const [msgQueryOffset, setMsgQueryOffset] = useState(0);
 	const msgInCtnRef = useRef(null);
 	const dispatch = useDispatch();
 	const activeContactId = useSelector(selectActiveContact);
 
 	const { lazyFetch, response, isLoading, error } = useLazyAxios({
 		method: "GET",
-		url: `/messages/${activeContactId}`,
+		url: `/messages/${activeContactId}?skip=${msgQueryOffset}`,
 		withCredentials: true,
 	});
 
 	useEffect(() => {
-		if (activeContactId) {
+		// Don't query the server any more after receiving null
+		if (activeContactId && response !== null) {
 			lazyFetch();
 		}
-	}, [activeContactId]);
+	}, [activeContactId, msgQueryOffset]);
 
 	useEffect(() => {
 		if (activeContactId && !isLoading && !error) {
-			dispatch(
-				addMsgs({
-					contactId: activeContactId,
-					messages: response,
-				}),
-			);
+			if (msgQueryOffset === 0) {
+				dispatch(
+					createMsgsChat({
+						contactId: activeContactId,
+						messages: response,
+					}),
+				);
+				return;
+			}
+			if (response) {
+				// Response will be null when no more data is available, don't dispatch that response to the store
+				dispatch(
+					addMsgs({
+						contactId: activeContactId,
+						messages: response,
+					}),
+				);
+			}
 		}
 	}, [activeContactId, isLoading, error]);
 
@@ -59,9 +73,13 @@ function Chat({ userId, wsConn }) {
 
 	return (
 		<StyledChat>
-            <ChatProfile wsConn={wsConn}/>
+			<ChatProfile wsConn={wsConn} />
 			{activeContactId && (
-				<MsgDisplay activeContactId={activeContactId} />
+				<MsgDisplay
+					activeContactId={activeContactId}
+					setMsgQueryOffset={setMsgQueryOffset}
+                    isLoading={isLoading}
+				/>
 			)}
 			{activeContactId && (
 				<StyledMsgInputCtn ref={msgInCtnRef}>
