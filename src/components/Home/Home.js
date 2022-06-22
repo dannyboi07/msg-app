@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 // import { setToast } from "../../slices/toastSlice";
 import { selectUserId } from "../../slices/userSlice";
 import { addMsg } from "../../slices/chatSlice";
+// import { selectTheme } from "../../slices/themeSlice";
 import { StyledHome } from "../../stitches-components/homeStyled";
 import Chat from "../Chat/Chat";
 import Contacts from "./Contacts";
@@ -11,8 +12,9 @@ import Contacts from "./Contacts";
 function Home() {
 	const dispatch = useDispatch();
 	const userId = useSelector(selectUserId);
+    // const theme = useSelector(selectTheme);
 	const wsConn = useRef(null);
-
+    // console.log(theme)
 	useEffect(() => {
 		wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
 

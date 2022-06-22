@@ -1,12 +1,14 @@
 import React, { useEffect } from "react";
-import { useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useAxios } from "../../hooks/useAxios";
 import { addContact } from "../../slices/contactsSlice";
 import { setActiveContact } from "../../slices/contactsSlice";
+import { selectTheme } from "../../slices/themeSlice";
 import {
 	StyledContactList,
 	StyledContact,
 } from "../../stitches-components/homeStyled";
+import Contact from "./ContactList";
 import {
 	Avatar,
 	AvatarImage,
@@ -16,6 +18,7 @@ import { parseInitials } from "../../features/utils";
 
 function Contacts() {
 	const dispatch = useDispatch();
+    const theme = useSelector(selectTheme);
 	const { response, isLoading } = useAxios({
 		method: "GET",
 		url: "/contacts",
@@ -42,16 +45,18 @@ function Contacts() {
 		);
 	}
 	return (
-		<StyledContactList>
-            <div>
-                <h1>
-                    Mumble
-                </h1>
-            </div>
+		<StyledContactList css={{
+            backgroundColor: theme.primCol,
+        }}>
+			<div>
+				<h1 style={{
+                    color: theme.accCol,
+                }}>Mumble</h1>
+			</div>
 			{response.map((contact) => {
 				const nameInitials = parseInitials(contact.name);
 				return (
-					<StyledContact
+					<Contact
 						key={contact.user_id}
 						onClick={() =>
 							dispatch(setActiveContact(contact.user_id))
@@ -75,7 +80,7 @@ function Contacts() {
 						<div>
 							<p>{contact.name}</p>
 						</div>
-					</StyledContact>
+					</Contact>
 				);
 			})}
 		</StyledContactList>

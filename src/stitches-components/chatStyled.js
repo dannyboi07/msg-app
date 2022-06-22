@@ -20,7 +20,7 @@ const StyledMsgCtn = styled("div", {
 		display: "flex",
 		flexDirection: "column",
 		overflow: "auto",
-		border: "1px solid blue",
+		// border: "1px solid blue",
 	},
 	// "& > *:first-child": {
 	//     marginBottom: "calc(100% - 30px)"
@@ -49,7 +49,7 @@ const StyledMsg = styled("div", {
 	"& > span": {
 		fontSize: "0.825rem",
 	},
-	border: "1px solid black",
+	// border: "1px solid black",
 });
 
 const animLoadBg = keyframes({
@@ -83,8 +83,7 @@ const StyledLoadingMsg = styled("div", {
 	display: "flex",
 	flexDirection: "column",
     justifyContent: "space-around",
-	alignItems: "flex-end",
-	border: "1px solid black",
+	// border: "1px solid black",
 
 	"& > div:not(:last-child)": {
 		margin: "4px 0",
@@ -123,7 +122,7 @@ const StyledLoadingMsg = styled("div", {
 
 const StyledMsgFlare = styled("div", {
 	position: "absolute",
-	top: -1,
+	top: 0,
 	width: 12.5,
 	height: 15,
 	backgroundColor: "Black",
@@ -142,10 +141,10 @@ const MsgFlareRight = styled(StyledMsgFlare, {
 });
 
 const StyledMsgDate = styled("span", {
-	border: "1px solid black",
+	// border: "1px solid black",
 	fontSize: "0.975rem",
 	margin: "0.75em",
-	padding: "0.25em 0.5em",
+	padding: "0.35em 0.65em",
 	borderRadius: "0.25em",
 });
 
@@ -185,7 +184,7 @@ const StyledMsgInputCtn = styled("div", {
 
 const StyledChatProfile = styled("div", {
 	minHeight: 70,
-	border: "1px solid black",
+	// border: "1px solid black",
 	display: "flex",
 	alignItems: "center",
 });

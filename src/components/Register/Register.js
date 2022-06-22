@@ -97,7 +97,7 @@ function Register() {
 				.toLowerCase();
 			if (!/^jpg|jpeg|png|heif|heic|gif$/.test(fileExt)) {
 				window.alert("Profile picture format is inacceptable", fileExt);
-                console.log(fileExt)
+				console.log(fileExt);
 				dispatch(
 					setToast({
 						type: "err",
@@ -122,6 +122,13 @@ function Register() {
 								message,
 							}),
 						),
+					);
+				} else {
+					localStorage.setItem(
+						"mumble-theme",
+						JSON.stringify({
+							type: "light",
+						}),
 					);
 				}
 			})

@@ -1,0 +1,30 @@
+import { createStitches } from "@stitches/react";
+import { theme } from "./features/utils";
+
+// const customPrimCol = JSON.parse(
+// 	localStorage.getItem("mumble-custom-prim-col"),
+// );
+// const customSecCol = JSON.parse(localStorage.getItem("mumble-custom-sec-col"));
+// const customAccCol = JSON.parse(localStorage.getItem("mumble-custom-acc-col"));
+
+export const { styled } = createStitches({
+	theme: {
+		colors: {
+			black: "#000",
+			white: "#fff",
+            ...theme,
+			// lightPrim: "#c9e4ca",
+			// lightSec: "#87bba2",
+			// lightAcc: "#55828b",
+			// darkPrim: "#0b3954",
+			// darkSec: "#087e8b",
+			// darkAcc: "#bfd7ea",
+			// customPrimCol,
+			// customSecCol,
+			// customAccCol,
+		},
+		fonts: {
+			interSans: "Inter, sans-serif",
+		},
+	},
+});

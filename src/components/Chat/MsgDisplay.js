@@ -10,6 +10,7 @@ import {
 	MsgFlareLeft,
 	MsgFlareRight,
 } from "../../stitches-components/chatStyled";
+import { selectTheme } from "../../slices/themeSlice";
 
 function scroll(ref, setMsgQueryOffset, isLoading) {
 	// When using a non exact comparison (>/<), this will trigger the setState for every pixel change below that limit, for eg 40
@@ -55,6 +56,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 	const contactMsgs = useSelector((state) =>
 		state.chats.find((chatsObj) => chatsObj.contactId === activeContactId),
 	);
+	const theme = useSelector(selectTheme);
 
 	useEffect(() => {
 		if (!scrollToBottomRef.current.mounted && contactMsgs) {
@@ -81,7 +83,11 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 	// }, [contactMsgs]);
 
 	return (
-		<StyledMsgCtn>
+		<StyledMsgCtn
+			css={{
+				backgroundColor: theme.secCol,
+			}}
+		>
 			<div
 				className="viewport-ctn"
 				onScroll={() => scroll(msgCtnRef, setMsgQueryOffset, isLoading)}
@@ -93,38 +99,40 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 							<StyledLoadingMsg
 								key={i}
 								css={{
+									backgroundColor: theme.primCol,
 									alignSelf: "flex-end",
+									alignItems: "flex-end",
+									borderRadius: "5px 0 5px 5px",
 								}}
 							>
-								<div>
-									<div />
-								</div>
-								<div>
-									<div />
-								</div>
-								<div>
-									<div />
-								</div>
-								<div>
-									<div />
-								</div>
-								<MsgFlareRight />
+								{[0, 0, 0, 0].map((_, i) => (
+									<div key={i}>
+										<div />
+									</div>
+								))}
+								<MsgFlareRight
+									css={{
+										backgroundColor: theme.primCol,
+									}}
+								/>
 							</StyledLoadingMsg>
 						) : (
-							<StyledLoadingMsg key={i}>
-								<div>
-									<div />
-								</div>
-								<div>
-									<div />
-								</div>
-								<div>
-									<div />
-								</div>
-								<div>
-									<div />
-								</div>
-								<MsgFlareLeft />
+							<StyledLoadingMsg
+								key={i}
+								css={{
+									backgroundColor: theme.primCol,
+									alignSelf: "flex-start",
+									borderRadius: "0 5px 5px 5px",
+								}}
+							>
+								{[0, 0, 0, 0].map((_, i) => (
+									<div key={i}>
+										<div />
+									</div>
+								))}
+								<MsgFlareLeft
+									css={{ backgroundColor: theme.primCol }}
+								/>
 							</StyledLoadingMsg>
 						),
 					)}
@@ -146,12 +154,14 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 									<StyledMsgDate
 										css={{
 											alignSelf: "center",
+											backgroundColor: theme.accCol,
 										}}
 									>
 										{date}
 									</StyledMsgDate>
 									<StyledMsg
 										css={{
+											backgroundColor: theme.primCol,
 											alignSelf: rcvdMsg
 												? "flex-start"
 												: "flex-end",
@@ -163,9 +173,19 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 										<p>{message.text}</p>
 										<span>{time}</span>
 										{rcvdMsg ? (
-											<MsgFlareLeft />
+											<MsgFlareLeft
+												css={{
+													backgroundColor:
+														theme.primCol,
+												}}
+											/>
 										) : (
-											<MsgFlareRight />
+											<MsgFlareRight
+												css={{
+													backgroundColor:
+														theme.primCol,
+												}}
+											/>
 										)}
 									</StyledMsg>
 								</React.Fragment>
@@ -181,6 +201,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 									<React.Fragment key={message.message_id}>
 										<StyledMsgDate
 											css={{
+												backgroundColor: theme.accCol,
 												alignSelf: "center",
 											}}
 										>
@@ -188,6 +209,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 										</StyledMsgDate>
 										<StyledMsg
 											css={{
+												backgroundColor: theme.primCol,
 												alignSelf: rcvdMsg
 													? "flex-start"
 													: "flex-end",
@@ -200,9 +222,19 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 
 											<span>{time}</span>
 											{rcvdMsg ? (
-												<MsgFlareLeft />
+												<MsgFlareLeft
+													css={{
+														backgroundColor:
+															theme.primCol,
+													}}
+												/>
 											) : (
-												<MsgFlareRight />
+												<MsgFlareRight
+													css={{
+														backgroundColor:
+															theme.primCol,
+													}}
+												/>
 											)}
 										</StyledMsg>
 									</React.Fragment>
@@ -218,6 +250,8 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 										>
 											<StyledMsg
 												css={{
+													backgroundColor:
+														theme.primCol,
 													alignSelf: rcvdMsg
 														? "flex-start"
 														: "flex-end",
@@ -235,6 +269,7 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 								return (
 									<StyledMsg
 										css={{
+											backgroundColor: theme.primCol,
 											alignSelf: rcvdMsg
 												? "flex-start"
 												: "flex-end",
@@ -248,9 +283,19 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 										<p>{message.text}</p>
 										<span>{time}</span>
 										{rcvdMsg ? (
-											<MsgFlareLeft />
+											<MsgFlareLeft
+												css={{
+													backgroundColor:
+														theme.primCol,
+												}}
+											/>
 										) : (
-											<MsgFlareRight />
+											<MsgFlareRight
+												css={{
+													backgroundColor:
+														theme.primCol,
+												}}
+											/>
 										)}
 									</StyledMsg>
 								);

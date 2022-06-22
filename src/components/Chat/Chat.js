@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useLazyAxios } from "../../hooks/useLazyAxios";
 import { addMsgs, createMsgsChat } from "../../slices/chatSlice";
 import { selectActiveContact } from "../../slices/contactsSlice";
+import { selectTheme } from "../../slices/themeSlice";
 // import { addMsg } from "../../slices/chatSlice";
 import { StyledMsgInputCtn } from "../../stitches-components/chatStyled";
 import { StyledChat } from "../../stitches-components/homeStyled";
@@ -15,6 +16,7 @@ function Chat({ userId, wsConn }) {
 	const msgInCtnRef = useRef(null);
 	const dispatch = useDispatch();
 	const activeContactId = useSelector(selectActiveContact);
+    const theme = useSelector(selectTheme);
 
 	const { lazyFetch, response, isLoading, error } = useLazyAxios({
 		method: "GET",
@@ -65,14 +67,20 @@ function Chat({ userId, wsConn }) {
 
 	if (!activeContactId) {
 		return (
-			<StyledChat>
+			<StyledChat css={{
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: theme.primCol,
+            }}>
 				<h1>Select a chat</h1>
 			</StyledChat>
 		);
 	}
 
 	return (
-		<StyledChat>
+		<StyledChat css={{
+            backgroundColor: theme.primCol,
+        }}>
 			<ChatProfile wsConn={wsConn} />
 			{activeContactId && (
 				<MsgDisplay

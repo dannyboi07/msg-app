@@ -43,6 +43,7 @@ function ChatProfile({ wsConn }) {
     const userId = useSelector(selectUserId);
 	const contactDetails = useSelector(selectActiveContactDetails);
     const [lastSeen, setLastSeen] = useState("");
+    const themePrimCol = useSelector(state => state.theme.primCol)
 	// const contactDetails1 = useSelector(state => state.contacts.contacts.find(contact => contact.userId))
 
     useEffect(() => {
@@ -69,7 +70,9 @@ function ChatProfile({ wsConn }) {
     }, []);
 
 	return (
-		<StyledChatProfile>
+		<StyledChatProfile css={{
+            backgroundColor: themePrimCol
+        }}>
 			<Avatar
 				css={{
 					width: 50,
