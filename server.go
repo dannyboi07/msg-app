@@ -62,6 +62,8 @@ type Person struct {
 // 	UT5dpr+IJufp0XbZusw=
 // 	-----END OPENSSH PRIVATE KEY-----
 func main() {
+	utils.InitLogger()
+
 	// privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	// if err != nil {
 	// 	fmt.Printf("Cannot generate RSA key\n")
@@ -169,6 +171,9 @@ func main() {
 			r.Get("/contacts", controller.GetContacts)
 			r.Get("/status/{id}", controller.GetOnline)
 			r.Get("/ws", ws.Handler)
+			r.Put("/changePw", controller.ChangePassword)
+			r.Get("/searchUser", controller.SearchUser)
+			r.Post("/addContact", controller.AddContact)
 		})
 
 		r.Group(func(r chi.Router) {

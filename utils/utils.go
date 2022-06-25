@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	stdlog "log"
 	"mime/multipart"
 	"msg-app/backend/types"
 	"net/http"
@@ -26,11 +27,22 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+var Log stdlog.Logger
+
+// var LogErr stdlog.Logger
+
+// var LogFatal stdlog.Logger
+
 var ProfImgValRegEx regexp.Regexp = *regexp.MustCompile("^image/jpg|jpeg|png|heif|heic|gif$")
 var NameValRegEx regexp.Regexp = *regexp.MustCompile(`^[\p{L}\p{M} .'-]+$`)
 var EmailValRegEx regexp.Regexp = *regexp.MustCompile("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?.)+(?:[A-Z]{2}|com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|museum)\b")
 var PrivKey *rsa.PrivateKey
 var PubKey *rsa.PublicKey
+
+func InitLogger() {
+	Log = *stdlog.New(os.Stdout, "Log: ", stdlog.Lshortfile|stdlog.LUTC)
+	// LogErr = *stdlog.New(os.Stderr, "logErr: ", stdlog.Lshortfile|stdlog.LUTC)
+}
 
 func ValidName(name *string) bool {
 	if *name = strings.TrimSpace(*name); len(*name) < 3 {

@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"msg-app/backend/utils"
 	"strconv"
 
 	"github.com/go-redis/redis/v9"
@@ -36,7 +37,8 @@ func SetUOnline(userId int64) error {
 	// }
 	err := redisClient.Set(ctx, strconv.Itoa(int(userId)), "Online", 0).Err()
 	if err != nil {
-		fmt.Println("Error setting key-val in Redis")
+		// fmt.Println("Error setting key-val in Redis")
+		// utils.Log.Println("redis error: ")
 		return err
 	}
 	err = redisClient.Publish(ctx, fmt.Sprintf("userstatus %d", userId), "Online").Err()
@@ -50,11 +52,13 @@ func SetUOnline(userId int64) error {
 func SetUOffline(userId int64, time string) {
 	err := redisClient.Set(ctx, strconv.Itoa(int(userId)), time, 0).Err()
 	if err != nil {
-		fmt.Println("Error deleting user status from Redis")
+		// fmt.Println("Error deleting user status from Redis")
+		utils.Log.Println("redis error: updating user timestamp", err)
 	}
 	err = redisClient.Publish(ctx, fmt.Sprintf("userstatus %d", userId), time).Err()
 	if err != nil {
-		fmt.Println("Error publishing user last seen timestamp in Redis")
+		// fmt.Println("Error publishing user last seen timestamp in Redis")
+		utils.Log.Println("redis error: publishing user last seen")
 	}
 }
 
@@ -69,7 +73,8 @@ func CheckUStatus(userId int64) (string, error) {
 	// return true
 	lastSeen, err := redisClient.Get(ctx, strconv.Itoa(int(userId))).Result()
 	if err != nil {
-		fmt.Println("Error getting user's status")
+		// fmt.Println("Error getting user's status")
+		utils.Log.Println("redis error: getting user's last seen")
 		return "", err
 	}
 	return lastSeen, nil
@@ -93,6 +98,7 @@ func SubUserStatus(userId int64) *redis.PubSub {
 
 func PubSubWait(pubsub *redis.PubSub) error {
 	if _, err := pubsub.Receive(ctx); err != nil {
+		utils.Log.Println("redis error: receiving from pubsub", err)
 		return err
 	}
 	return nil

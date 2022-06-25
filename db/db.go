@@ -16,7 +16,7 @@ import (
 var db *pgxpool.Pool
 var dbContext context.Context
 
-const dbUrl string = "postgres://uname:pw@localhost:5432/test"
+const dbUrl string = "postgres://postgres:dannyDpg404@localhost:5432/test"
 
 func InitDB() error {
 	dbContext = context.Background()
@@ -113,7 +113,7 @@ func UserExists(userEmail *string) (bool, error) {
 	return exists, nil
 }
 
-func GetUser(userEmail *string) (types.UserWithId, error) {
+func GetUser(userEmail string) (types.UserWithId, error) {
 	var user types.UserWithId
 	row := db.QueryRow(dbContext, "SELECT user_id, name, email, profile_pic, password_hash FROM users WHERE email = $1", userEmail)
 	err := row.Scan(&user.UserId, &user.Name, &user.Email, &user.Profile_Pic, &user.Password)
@@ -131,6 +131,27 @@ func UserExistsById(userId int64) (bool, error) {
 		return false, err
 	}
 	return exists, nil
+}
+
+func GetUserById(userId int64) (types.UserWithId, error) {
+	var user types.UserWithId
+	row := db.QueryRow(dbContext, "SELECT user_id, name, email, profile_pic, password_hash FROM users WHERE user_id = $1", userId)
+	err := row.Scan(&user.UserId, &user.Name, &user.Email, &user.Profile_Pic, &user.Password)
+	if err != nil {
+		return user, err
+	}
+	return user, nil
+}
+
+func UpdateUserPw(userId int64, userPw string) error {
+	commandTag, err := db.Exec(dbContext, "UPDATE users SET password_hash = $1 WHERE user_id = $2", userPw, userId)
+	if err != nil {
+		return err
+	} else if commandTag.RowsAffected() != 1 {
+		return errors.New("Error updating user password at DB")
+		// utils.Log.Println("db error: Error updating user password at DB")
+	}
+	return nil
 }
 
 func UserContacts(userId int64) ([]types.Contact, error) {
@@ -153,11 +174,27 @@ func UserContacts(userId int64) ([]types.Contact, error) {
 	return contacts, nil
 }
 
-func ContactMsgs(userId int64, contactId int64) ([]types.Message, error) {
+func ContactExists(userId int64, contactId int64) bool {
+	var exists bool
+	row := db.QueryRow(dbContext, `SELECT EXISTS(SELECT * FROM user_contact 
+									WHERE user_1_id = $1 AND user_2_id = $2)`, userId, contactId)
+	err := row.Scan(&exists)
+	if err != nil {
+		// utils.Log.Println("db error: Error checking if contact exists at DB")
+		return false
+	}
+	return exists
+}
+
+func ContactMsgs(userId int64, contactId int64, offset int) ([]types.Message, error) {
 	var messages []types.Message
-	rows, err := db.Query(dbContext, `SELECT * FROM message WHERE 
-										msg_from = $1 AND msg_to = $2 
-										OR msg_from = $2 AND msg_to = $1`, userId, contactId)
+	rows, err := db.Query(dbContext, `SELECT * FROM message WHERE
+										msg_from = $1 AND msg_to = $2
+										OR msg_from = $2 AND msg_to = $1
+										ORDER BY time DESC OFFSET $3 LIMIT 10`, userId, contactId, offset)
+	// rows, err := db.Query(dbContext, `SELECT * FROM message WHERE
+	// 									msg_from = $1 AND msg_to = $2
+	// 									OR msg_from = $2 AND msg_to = $1`, userId, contactId)
 	if err != nil {
 		return nil, err
 	}
@@ -167,10 +204,21 @@ func ContactMsgs(userId int64, contactId int64) ([]types.Message, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println("messagedb", message)
+		// fmt.Println("messagedb", message)
 		messages = append(messages, message)
 	}
 	return messages, nil
+}
+
+func AddContact(userId1 int64, userId2 int64) error {
+	commandTag, err := db.Exec(dbContext, `INSERT INTO user_contact (user_1_id, user_2_id) 
+											VALUES ($1, $2)`, userId1, userId2)
+	if err != nil {
+		return err
+	} else if commandTag.RowsAffected() != 1 {
+		return errors.New("Error inserting new contact at DB")
+	}
+	return nil
 }
 
 func InsertMessage(insertMessage types.WsMessage) (types.Message, error) {

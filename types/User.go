@@ -50,10 +50,27 @@ type UserWithoutJwt struct {
 	Profile_Pic *string `json:"profile_pic"`
 }
 
+type UserChangePwInput struct {
+	// Email       *string `json:"email"`
+	OldPassword *string `json:"password"`
+	NewPassword *string `json:"new_pw"`
+}
+
 type Contact struct {
 	UserId      *int64  `json:"user_id"`
 	Name        *string `json:"name"`
 	Profile_Pic *string `json:"profile_pic"`
+}
+
+type ContactSearch struct {
+	UserId      int64  `json:"user_id"`
+	Name        string `json:"name"`
+	Profile_Pic string `json:"profile_pic"`
+	IsFriend    bool   `json:"is_friend"`
+}
+
+type AddContactId struct {
+	UserId *int64 `json:"user_id"`
 }
 
 type WsMessage struct {

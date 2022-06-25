@@ -5,6 +5,7 @@ import (
 	"msg-app/backend/db"
 	"msg-app/backend/redis"
 	"msg-app/backend/types"
+	"msg-app/backend/utils"
 	"net/http"
 	"time"
 
@@ -31,6 +32,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	WsClients.RWMutex.RLock()
 	if _, userPresent := WsClients.ClientConns[userId]; userPresent {
 		http.Error(w, "User already connected", http.StatusForbidden)
+		utils.Log.Println("client error: user exists in connection list", r.RemoteAddr)
 		WsClients.RWMutex.RUnlock()
 		return
 	}
@@ -38,7 +40,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, "Error establishing Websocket connection", http.StatusInternalServerError)
-		fmt.Println(err)
+		// fmt.Println(err)
+		utils.Log.Println("ws cntrl error: upgrading WS connection", err)
 		return
 	}
 	WsClients.RWMutex.Lock()
@@ -46,7 +49,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	err = redis.SetUOnline(userId) // redis
 	if err != nil {
-		fmt.Println("redis setuonline err", err, &conn)
+		// fmt.Println("redis setuonline err", err, &conn)
+		utils.Log.Println("ws cntrl error: setting user online in redis", err)
 	}
 	WsClients.RWMutex.Unlock()
 	conn.SetReadLimit(4096)
@@ -67,7 +71,8 @@ forLoop:
 	for {
 		select {
 		case <-closeParentChan:
-			fmt.Println("Parent wsConnHandler received error from sub handling child")
+			// fmt.Println("Parent wsConnHandler received error from sub handling child")
+			utils.Log.Println("ws: parent gorountine rcvd error from sub handling-child")
 			go wsPubSubHandler(conn, contactIdChan, closeChildChan, closeParentChan)
 			continue forLoop
 		default:
@@ -77,7 +82,8 @@ forLoop:
 				fmt.Println("err under readjson", err)
 				break forLoop
 			} else if message.Type == nil || message.To == nil || message.From == nil {
-				fmt.Println("Missing fields in Websocket message")
+				// fmt.Println("Missing fields in Websocket message")
+				utils.Log.Println("ws-client: missing fields in ws message", conn.RemoteAddr())
 				break forLoop
 			} else {
 				// Verifying whether the "from" field in WS message sent from client side actually exists in the connection list.
@@ -85,7 +91,8 @@ forLoop:
 				// an in-memory lookup and faster.
 				WsClients.RWMutex.RLock()
 				if _, senderIsPresent := WsClients.ClientConns[*message.From]; !senderIsPresent {
-					fmt.Println("Sender not present in list of connections, sent userId:", message.From)
+					// fmt.Println("Sender not present in list of connections, sent userId:", message.From)
+					utils.Log.Println("ws-client: Sender missing from list of connections, sent uId", message.From, conn.RemoteAddr())
 					break forLoop
 				}
 				WsClients.RWMutex.RUnlock()
@@ -93,16 +100,18 @@ forLoop:
 				switch *message.Type {
 				case "msg":
 					if message.Text == nil {
-						fmt.Println("Missing fields in Websocket message sent by client")
+						// fmt.Println("Missing fields in Websocket message sent by client")
+						utils.Log.Println("ws-client: missing fields in ws message", conn.RemoteAddr())
 						break forLoop
 					}
 					WsClients.RWMutex.RLock()
 					if recipientConn, recipientPresent := WsClients.ClientConns[*message.To]; recipientPresent {
-						fmt.Println("sending message")
+						// fmt.Println("sending message")
 						WsClients.RWMutex.RUnlock()
 						msgToSend, err := db.InsertMessage(message)
 						if err != nil {
-							fmt.Println("Error inserting message in db", err)
+							// fmt.Println("Error inserting message in db", err)
+							utils.Log.Println("ws: error inserting message in db", err)
 							break forLoop
 						}
 
@@ -161,10 +170,12 @@ forLoop:
 	for {
 		if subscribe == true {
 			if pubsub != nil {
-				fmt.Println("Pubsub closing")
+				// fmt.Println("Pubsub closing")
+				utils.Log.Println("Pubsub closing")
 				pubsub.Close()
 			}
-			fmt.Println("pubsubHandler resubbing")
+			// fmt.Println("pubsubHandler resubbing")
+			utils.Log.Println("pubsubHandler resubbing")
 			pubsub = redis.SubUserStatus(globalContactId)
 			subChannel = pubsub.Channel(goredis.WithChannelHealthCheckInterval(0))
 			subscribe = false
@@ -172,7 +183,8 @@ forLoop:
 		select {
 		case contactId := <-contactId:
 			if contactId != globalContactId {
-				fmt.Println("pubsubHandler contactId", contactId)
+				// fmt.Println("pubsubHandler contactId", contactId)
+				utils.Log.Println("pubsubHanlder contactId", contactId)
 				globalContactId = contactId
 				subscribe = true
 				continue forLoop
@@ -181,7 +193,8 @@ forLoop:
 			// for msg := range msgs {
 
 			// }
-			fmt.Println("pubsubHandler pub received on sub", msgs, msgs.Pattern)
+			// fmt.Println("pubsubHandler pub received on sub", msgs, msgs.Pattern)
+			utils.Log.Println("pubsubHandler pub rcvd on sub", msgs)
 			// if fmt.Sprintf("userstatus %d", globalContactId) == msgs.Pattern {
 			// }
 			WsClients.RWMutex.Lock()
@@ -193,7 +206,8 @@ forLoop:
 			}
 			WsClients.RWMutex.Unlock()
 		case <-closeChild:
-			fmt.Println("pubsubHandler closing")
+			// fmt.Println("pubsubHandler closing")
+			utils.Log.Println("pubsubHandler closing")
 			break forLoop
 			// default:
 			// 	fmt.Println("pubsubHandler default")
@@ -202,7 +216,8 @@ forLoop:
 			// 	}
 		}
 	}
-	fmt.Println("pubsubHandler closing at end")
+	// fmt.Println("pubsubHandler closing at end")
+	utils.Log.Println("pubsubHandler closing at end")
 	if pubsub != nil {
 		pubsub.Close()
 	}

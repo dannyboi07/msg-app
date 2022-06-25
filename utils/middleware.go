@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"msg-app/backend/db"
 	"net/http"
 )
@@ -28,15 +27,18 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		mapClaims, err, statusCode := VerifyUserToken(accessToken.Value)
 		if err != nil {
 			http.Error(w, err.Error(), statusCode)
+			Log.Println("midwre/client error: ", err, r.RemoteAddr)
 			return
 		}
 		exists, err := db.UserExistsById(int64(mapClaims["UserId"].(float64)))
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			fmt.Println(err)
+			// fmt.Println(err)
+			Log.Println("midwre error: checking user existence", err)
 			return
 		} else if !exists {
 			http.Error(w, "User doesn't exist", http.StatusUnauthorized)
+			Log.Println("midwre-client error: user not found", r.RemoteAddr)
 			return
 		}
 		mapClaims["UserId"] = int64(mapClaims["UserId"].(float64))
