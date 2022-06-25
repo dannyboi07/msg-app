@@ -15,10 +15,12 @@ import {
 	AvatarFallback,
 } from "../../stitches-components/commonStyled";
 import { parseInitials } from "../../features/utils";
+import OptionsSvg from "../../assets/options.svg";
+import DropMenu from "./DropMenu";
 
 function Contacts() {
 	const dispatch = useDispatch();
-    const theme = useSelector(selectTheme);
+	const theme = useSelector(selectTheme);
 	const { response, isLoading } = useAxios({
 		method: "GET",
 		url: "/contacts",
@@ -45,15 +47,23 @@ function Contacts() {
 		);
 	}
 	return (
-		<StyledContactList css={{
-            backgroundColor: theme.primCol,
-        }}>
+		<StyledContactList
+			css={{
+				backgroundColor: theme.primCol,
+			}}
+		>
 			<div>
-				<h1 style={{
-                    color: theme.accCol,
-                }}>Mumble</h1>
+				<h1
+					style={{
+						color: theme.accCol,
+					}}
+				>
+					Mumble
+				</h1>
+				<DropMenu />
 			</div>
-			{response.map((contact) => {
+            <hr />
+			{response && response.map((contact) => {
 				const nameInitials = parseInitials(contact.name);
 				return (
 					<Contact

@@ -79,6 +79,7 @@ function Login() {
 						type="email"
 						value={userDetails.email}
 						onChange={handleDetailChange}
+                        required
 					/>
 				</label>
 				<label>
@@ -88,6 +89,7 @@ function Login() {
 						type="password"
 						value={userDetails.password}
 						onChange={handleDetailChange}
+                        required
 					/>
 				</label>
 

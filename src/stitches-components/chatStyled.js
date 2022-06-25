@@ -11,6 +11,7 @@ const StyledMsgCtn = styled("div", {
 	overflow: "auto",
 	// flexDirection: "column",
 	// justifyContent: "flex-end",
+    boxShadow: "inset -10px -10px 70px -25px rgba(0,0,0,0.75)",
 
 	"& > div.viewport-ctn": {
 		minWidth: "100%",
@@ -21,6 +22,14 @@ const StyledMsgCtn = styled("div", {
 		flexDirection: "column",
 		overflow: "auto",
 		// border: "1px solid blue",
+
+        "& > div:not(:last-child), & > span": {
+            boxShadow: "0 1px 0 1px rgba(0,0,0,0.1)",
+
+            // "& > div": {
+            //     boxShadow: "0 1px 0 1px rgba(0,0,0,0.1)",
+            // }
+        }
 	},
 	// "& > *:first-child": {
 	//     marginBottom: "calc(100% - 30px)"
@@ -82,7 +91,7 @@ const StyledLoadingMsg = styled("div", {
 	padding: "0.75em 1em",
 	display: "flex",
 	flexDirection: "column",
-    justifyContent: "space-around",
+	justifyContent: "space-around",
 	// border: "1px solid black",
 
 	"& > div:not(:last-child)": {
@@ -115,9 +124,9 @@ const StyledLoadingMsg = styled("div", {
 		},
 	},
 
-    "& > div:nth-child(4)": {
-        width: 50,
-    }
+	"& > div:nth-child(4)": {
+		width: 50,
+	},
 });
 
 const StyledMsgFlare = styled("div", {
@@ -148,18 +157,52 @@ const StyledMsgDate = styled("span", {
 	borderRadius: "0.25em",
 });
 
+const MsgInputCtn = styled("div", {
+	display: "flex",
+    backgroundColor: "transparent",
+    alignItems: "center",
+
+	"& > button": {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+		fontSize: "0.95rem",
+		padding: "0.25em 0.5em",
+		width: 45,
+		height: 45,
+        borderRadius: "50%",
+        border: "none",
+        backgroundColor: "white",
+
+        "&:not([disabled]):hover": {
+            cursor: "pointer",
+            backdropFilter: "contrast(50%)",
+        },
+
+		"& > svg": {
+			width: "65%",
+			height: "65%",
+		},
+	},
+});
+
 const StyledMsgInputCtn = styled("div", {
 	//minHeight: 40,
 	height: 45,
+	flexGrow: 1,
 	// padding: "0.25em 0",
-	// border: "1px solid black",
+	border: "1px solid black",
 	display: "flex",
 	alignItems: "center",
+    borderRadius: "1.5em",
+    overflow: "hidden",
+    // backgroundColor: "white",
 
 	"& > textarea": {
 		display: "block",
 		fontSize: "1rem",
-		width: "100%",
+		// width: "92.5%",
+		flexGrow: 1,
 		// height: 30,
 		// minHeight: 20,
 		height: "65%",
@@ -170,6 +213,8 @@ const StyledMsgInputCtn = styled("div", {
 		resize: "none",
 		border: 0,
 		overflowY: "auto",
+		border: "1px solid black",
+        backgroundColor: "transparent",
 
 		"&:focus": {
 			outline: "none",
@@ -179,6 +224,13 @@ const StyledMsgInputCtn = styled("div", {
 	"& > button": {
 		fontSize: "0.95rem",
 		padding: "0.25em 0.5em",
+		width: 45,
+		height: 45,
+
+		"& > svg": {
+			width: "75%",
+			height: "75%",
+		},
 	},
 });
 
@@ -187,6 +239,22 @@ const StyledChatProfile = styled("div", {
 	// border: "1px solid black",
 	display: "flex",
 	alignItems: "center",
+
+    "& > div:last-child": {
+        height: 45,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-around",
+
+        "& > p": {
+            "&:first-child": {
+                fontSize: "1.125rem"
+            },
+            "&:last-child": {
+                fontSize: "0.925rem"
+            }
+        }
+    }
 });
 
 export {
@@ -195,6 +263,7 @@ export {
 	StyledLoadingMsg,
 	// StyledLoadingBg,
 	StyledMsgDate,
+    MsgInputCtn,
 	StyledMsgInputCtn,
 	StyledChatProfile,
 	MsgFlareLeft,

@@ -11,12 +11,14 @@ function Contact({ onClick, children }) {
 		height: "4.5em",
 		display: "flex",
 		alignItems: "center",
+        color: theme.contrast ? "black" : "white",
 		"&:hover": {
 			cursor: "pointer",
 		},
 
-		"&::before, &::after": {
+		"&::after": {
 			position: "absolute",
+            bottom: 0,
 			content: "",
 			width: "calc(100% - 90px)",
 			height: 1,
@@ -24,12 +26,12 @@ function Contact({ onClick, children }) {
 			backgroundColor: `${theme.accCol}`,
 		},
 
-		"&::before": {
-			top: 0,
-		},
-		"&::after": {
-			bottom: 0,
-		},
+		// "&::before": {
+		// 	top: 0,
+		// },
+		// "&::after": {
+		// 	bottom: 0,
+		// },
 
 		"& > div": {
 			display: "flex",

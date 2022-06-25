@@ -38,7 +38,8 @@ function parseSectionTime(msgTime) {
 		dateTime.getMonth() === currDate.getMonth() &&
 		dateTime.getFullYear() === currDate.getFullYear()
 	) {
-		if (dateTime.getDate() === currDate.getDate()) return { dateTime, date: "Today", time };
+		if (dateTime.getDate() === currDate.getDate())
+			return { dateTime, date: "Today", time };
 		else if (dateTime.getDate() === currDate.getDate() - 1)
 			return { dateTime, date: "Yesterday", time };
 	}
@@ -161,6 +162,9 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 										css={{
 											alignSelf: "center",
 											backgroundColor: theme.accCol,
+											color: theme.contrast
+												? "white"
+												: "black",
 										}}
 									>
 										{dateTime.date}
@@ -209,6 +213,9 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 											css={{
 												backgroundColor: theme.accCol,
 												alignSelf: "center",
+												color: theme.contrast
+													? "white"
+													: "black",
 											}}
 										>
 											{dateTime.date}

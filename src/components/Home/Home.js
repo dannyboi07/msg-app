@@ -12,9 +12,9 @@ import Contacts from "./Contacts";
 function Home() {
 	const dispatch = useDispatch();
 	const userId = useSelector(selectUserId);
-    // const theme = useSelector(selectTheme);
+    const theme = useSelector(state => state.theme);
 	const wsConn = useRef(null);
-    // console.log(theme)
+    console.log(theme)
 	useEffect(() => {
 		wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
 

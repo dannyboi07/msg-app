@@ -89,7 +89,7 @@ function ChatProfile({ wsConn }) {
 				</AvatarFallback>
 			</Avatar>
 			<div>
-				<h3>{contactDetails.name}</h3>
+				<p>{contactDetails.name}</p>
 				<p>{lastSeen !== "" && lastSeen}</p>
 			</div>
 		</StyledChatProfile>

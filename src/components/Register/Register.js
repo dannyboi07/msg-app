@@ -155,7 +155,12 @@ function Register() {
 					<h3>
 						Profile Picture <span>(Click below to upload)</span>
 					</h3>
-					<Avatar>
+					<Avatar
+						css={{
+							width: 70,
+							height: 70,
+						}}
+					>
 						<AvatarImage src={profPicUrl} alt={userDetails.name} />
 						<AvatarFallback delayMs={500}>
 							{fallbackName}
