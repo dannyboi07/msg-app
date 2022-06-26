@@ -33,7 +33,7 @@ function Contacts() {
 		}
 	}, [response]);
 
-	console.log(response, isLoading);
+	// console.log(response, isLoading);
 
 	if (isLoading) {
 		return (

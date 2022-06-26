@@ -12,7 +12,7 @@ import {
 import { selectUserId } from "../../slices/userSlice";
 
 function parseOnline(status) {
-    console.log(status, new Date(status))
+    // console.log(status, new Date(status))
 	if (status === "Online") return "Online";
 	else {
 		const statusDate = new Date(status);
@@ -67,7 +67,7 @@ function ChatProfile({ wsConn }) {
 
         return(() => wsConn.current.removeEventListener("message", handleWsStatusListener))
 
-    }, []);
+    }, [contactDetails.user_id]);
 
 	return (
 		<StyledChatProfile css={{

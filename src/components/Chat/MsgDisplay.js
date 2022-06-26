@@ -18,7 +18,7 @@ function scroll(ref, setMsgQueryOffset, isLoading) {
 	// isLoading is an indicator that the query is loading, using that to wait until the query is completed to send the next query.
 	// Only trigger when scrollTop space is less than 40 pixels and when a previous query has been completed - when isLoading is false
 	if (ref.current.scrollTop < 40 && !isLoading) {
-		console.log("reached top");
+        console.log("reached top", isLoading);
 		setMsgQueryOffset((prev) => prev + 10);
 	}
 }
@@ -55,10 +55,12 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 	const theme = useSelector(selectTheme);
 
 	useEffect(() => {
+		// Fix scroll to bottom initial mount after initial set of messages are loaded
 		if (!scrollToBottomRef.current.mounted && contactMsgs) {
 			scrollToBottomRef.current.scrollIntoView();
 			scrollToBottomRef.current.mounted = true;
 		} else if (
+			// Scroll to bottom when a new message arrives
 			scrollToBottomRef.current.mounted &&
 			contactMsgs &&
 			msgCtnRef.current.scrollHeight -
@@ -69,6 +71,11 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 			scrollToBottomRef.current.scrollIntoView({ behavior: "smooth" });
 		}
 	}, [contactMsgs]);
+
+	// Fix chat scroll to bottom when switching between contacts
+	useEffect(() => {
+		scrollToBottomRef.current.scrollIntoView();
+	}, [activeContactId]);
 
 	// console.log(contactMsgs);
 
@@ -86,7 +93,15 @@ function MsgDisplay({ activeContactId, setMsgQueryOffset, isLoading }) {
 		>
 			<div
 				className="viewport-ctn"
-				onScroll={() => scroll(msgCtnRef, setMsgQueryOffset, isLoading)}
+                // Only attach scroll listener when there are messages
+                // Bug fix since the scroll listener was triggering on initial mount (sometimes, possibly due to the "loading" variable)
+                // when the scrollbar is at the top of the scrollable area
+                // and sends a query for next batch of messages
+				onScroll={() =>
+					contactMsgs
+						? scroll(msgCtnRef, setMsgQueryOffset, isLoading)
+						: null
+				}
 				ref={msgCtnRef}
 			>
 				{isLoading &&

@@ -13,7 +13,7 @@ function ToastComp() {
 	const dispatch = useDispatch();
 	const toast = useSelector(selectToast);
 	// const toastTimer = useRef(0);
-	console.log(toast);
+	// console.log(toast);
 	// useEffect(() => {
 	// 	if (toast.message) {
 	// 		toastTimer.current = setTimeout(() => {

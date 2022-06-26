@@ -34,7 +34,7 @@ export function calcContrast(col) {
 	const g = parseInt(col.substring(3, 5), 16);
 	const b = parseInt(col.substring(5, 7), 16);
 	const contrast = r * 0.299 + g * 0.587 + b * 0.114;
-	console.log(contrast); // /1000 > 100
+	// console.log(contrast); // /1000 > 100
 	return contrast > 100; // If greater than 100, it's a light color and needs a dark text color
 }
 

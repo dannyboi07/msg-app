@@ -17,10 +17,13 @@ import SendIcon from "../../assets/send.svg";
 function Chat({ userId, wsConn }) {
 	const [msgInput, setMsgInput] = useState("");
 	const [msgQueryOffset, setMsgQueryOffset] = useState(0);
+	const [stopQuery, setStopQuery] = useState(false);
 	const msgInCtnRef = useRef(null);
 	const dispatch = useDispatch();
 	const activeContactId = useSelector(selectActiveContact);
 	const theme = useSelector(selectTheme);
+
+	// const currContactRef = useRef(null);
 
 	const { lazyFetch, response, isLoading, error } = useLazyAxios({
 		method: "GET",
@@ -28,15 +31,37 @@ function Chat({ userId, wsConn }) {
 		withCredentials: true,
 	});
 
-	useEffect(() => {
-		// Don't query the server any more after receiving null
-		if (activeContactId && response !== null) {
-			lazyFetch();
-		}
-	}, [activeContactId, msgQueryOffset]);
+	// useEffect(() => {
+	// 	if (activeContactId) {
+	// 		lazyFetch();
+	// 	}
+	// }, [activeContactId]);
+    // console.log(stopQuery, activeContactId);
 
 	useEffect(() => {
-		if (activeContactId && !isLoading && !error && response) {
+		if (activeContactId) setStopQuery(false);
+	}, [activeContactId]);
+
+	useEffect(() => {
+		// currContactRef.current = activeContactId;
+		// Don't query the server any more after receiving null
+		if (activeContactId && !stopQuery) lazyFetch();
+	}, [activeContactId, msgQueryOffset, stopQuery]);
+
+	// console.log(msgQueryOffset)
+
+	useEffect(() => {
+		console.log(
+			"ACI:",
+			activeContactId,
+			"RESP:",
+			response,
+			"ISLOADING:",
+			isLoading,
+			"ERROR:",
+			error,
+		);
+		if (response) {
 			if (msgQueryOffset === 0) {
 				dispatch(
 					createMsgsChat({
@@ -45,19 +70,17 @@ function Chat({ userId, wsConn }) {
 					}),
 				);
 				return;
-			}
-			if (response) {
-				// Response will be null when no more data is available, don't dispatch that response to the store
+			} else {
 				dispatch(
 					addMsgs({
 						contactId: activeContactId,
 						messages: response,
 					}),
 				);
-			}
-		}
-	}, [activeContactId, isLoading, error]);
-
+			} // Else If: Response will be null when no more data is available, don't dispatch that response to the store
+		} else if (response === null) setStopQuery(true);
+	}, [response]);
+    
 	function sendMsg() {
 		if (msgInput.length > 0) {
 			const msg = {

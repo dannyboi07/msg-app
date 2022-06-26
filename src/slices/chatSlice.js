@@ -75,7 +75,7 @@ export const chatSlice = createSlice({
 			// });
 		},
 		createMsgsChat: (state, action) => {
-            console.log(action.payload);
+            // console.log(action.payload);
 			return [
 				...state,
 				{
