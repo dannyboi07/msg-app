@@ -12,16 +12,20 @@ import Contacts from "./Contacts";
 function Home() {
 	const dispatch = useDispatch();
 	const userId = useSelector(selectUserId);
-    const theme = useSelector(state => state.theme);
+    // const cachedContactsMsgs = useSelector(state => state.chats.map(chat => chat.contactId));
+    // const theme = useSelector(state => state.theme);
+    // const [toScroll, setToScroll] = useState(false);
 	const wsConn = useRef(null);
     // console.log(theme)
+
+    // console.log(cachedContactsMsgs);
 	useEffect(() => {
 		wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
 
 		wsConn.current.addEventListener("message", (e) => {
 			const data = JSON.parse(e.data);
             if (data.last_seen) return;
-            console.log("home component received ws msg", data)
+            // console.log("home component received ws msg", data)
 			const contactId = data.from === userId ? data.to : data.from;
 			dispatch(
 				addMsg({

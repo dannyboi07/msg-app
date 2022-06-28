@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useLazyAxios } from "../../hooks/useLazyAxios";
-import { addMsgs, createMsgsChat } from "../../slices/chatSlice";
+import {
+	addMsgs,
+	createMsgsChat,
+	selectQueryOffset,
+} from "../../slices/chatSlice";
 import { selectActiveContact } from "../../slices/contactsSlice";
 import { selectTheme } from "../../slices/themeSlice";
 // import { addMsg } from "../../slices/chatSlice";
@@ -15,19 +19,30 @@ import MsgDisplay from "./MsgDisplay";
 import SendIcon from "../../assets/send.svg";
 
 function Chat({ userId, wsConn }) {
-	const [msgInput, setMsgInput] = useState("");
-	const [msgQueryOffset, setMsgQueryOffset] = useState(0);
-	const [stopQuery, setStopQuery] = useState(false);
-	const msgInCtnRef = useRef(null);
 	const dispatch = useDispatch();
-	const activeContactId = useSelector(selectActiveContact);
-	const theme = useSelector(selectTheme);
 
-	// const currContactRef = useRef(null);
+	const [msgInput, setMsgInput] = useState("");
+	// const [msgQueryOffset, setMsgQueryOffset] = useState(0);
+	const [stopQuery, setStopQuery] = useState(false);
+	const [toScroll, setToScroll] = useState(false);
+
+	const msgInCtnRef = useRef(null);
+
+	const activeContactId = useSelector(selectActiveContact);
+	// const msgQueryOffset = useSelector(selectQueryOffset(activeContactId));
+	const theme = useSelector(selectTheme);
+	const msgCache = useSelector((state) => {
+		for (let i = 0; i < state.chats.length; i++) {
+			if (state.chats[i].contactId === activeContactId) {
+				return state.chats[i];
+			}
+		}
+		return null;
+	});
 
 	const { lazyFetch, response, isLoading, error } = useLazyAxios({
 		method: "GET",
-		url: `/messages/${activeContactId}?skip=${msgQueryOffset}`,
+		url: `/messages/${activeContactId}?skip=${msgCache}`,
 		withCredentials: true,
 	});
 
@@ -36,51 +51,60 @@ function Chat({ userId, wsConn }) {
 	// 		lazyFetch();
 	// 	}
 	// }, [activeContactId]);
-    // console.log(stopQuery, activeContactId);
+	// console.log(stopQuery, activeContactId);
 
+	console.log(msgCache);
 	useEffect(() => {
-		if (activeContactId) setStopQuery(false);
+		if (activeContactId) {
+			setStopQuery(false);
+			// setmsgCache.queryOffset(0);
+			setToScroll(true);
+			if (!msgCache) {
+				dispatch(
+					createMsgsChat({
+						contactId: activeContactId,
+						messages: [],
+					}),
+				);
+			}
+		}
 	}, [activeContactId]);
 
 	useEffect(() => {
 		// currContactRef.current = activeContactId;
 		// Don't query the server any more after receiving null
-		if (activeContactId && !stopQuery) lazyFetch();
-	}, [activeContactId, msgQueryOffset, stopQuery]);
+		if (activeContactId && !stopQuery) {
+			lazyFetch();
+			console.log("lazyfetching");
+		}
+	}, [activeContactId, stopQuery]);
 
 	// console.log(msgQueryOffset)
 
 	useEffect(() => {
-		console.log(
-			"ACI:",
-			activeContactId,
-			"RESP:",
-			response,
-			"ISLOADING:",
-			isLoading,
-			"ERROR:",
-			error,
-		);
-		if (response) {
-			if (msgQueryOffset === 0) {
-				dispatch(
-					createMsgsChat({
-						contactId: activeContactId,
-						messages: response,
-					}),
-				);
-				return;
-			} else {
-				dispatch(
-					addMsgs({
-						contactId: activeContactId,
-						messages: response,
-					}),
-				);
-			} // Else If: Response will be null when no more data is available, don't dispatch that response to the store
+		if (response && !error) {
+			// console.log(msgQueryOffset);
+			// if (!msgQueryOffset) {
+			// 	// This check is a workaround to check if the first query is being made
+			// 	dispatch(
+			// 		createMsgsChat({
+			// 			contactId: activeContactId,
+			// 			messages: response,
+			// 		}),
+			// 	);
+			// 	return;
+
+			dispatch(
+				addMsgs({
+					contactId: activeContactId,
+					messages: response,
+				}),
+			);
+			// setToScroll(true);
+			// Else If: Response will be null when no more data is available, don't dispatch that response to the store
 		} else if (response === null) setStopQuery(true);
 	}, [response]);
-    
+
 	function sendMsg() {
 		if (msgInput.length > 0) {
 			const msg = {
@@ -122,8 +146,10 @@ function Chat({ userId, wsConn }) {
 			{activeContactId && (
 				<MsgDisplay
 					activeContactId={activeContactId}
-					setMsgQueryOffset={setMsgQueryOffset}
+					// setMsgQueryOffset={setMsgQueryOffset}
 					isLoading={isLoading}
+					toScroll={toScroll}
+					setToScroll={setToScroll}
 				/>
 			)}
 			{activeContactId && (

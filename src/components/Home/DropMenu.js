@@ -1,18 +1,19 @@
 import React, { useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { clearUser } from "../../slices/userSlice";
 import {
-	DropdownMenu,
-	DropdownMenuArrow,
+    DropdownMenuArrow,
 	DropdownMenuCheckboxItem,
-	DropdownMenuContent,
 	// DropdownMenuItem,
 	DropdownMenuItemIndicator,
 	DropdownMenuLabel,
 	DropdownMenuRadioGroup,
 	DropdownMenuRadioItem,
+	DropdownMenuTriggerItem,
+	DropdownMenu,
+	DropdownMenuContent,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-	DropdownMenuTriggerItem,
 	StyledItem,
 	StyledDialogContent,
 	StyledDialogTitle,
@@ -37,6 +38,7 @@ import ChangePw from "./ChangePw";
 import AddContact from "./AddContact";
 
 function DropMenu() {
+	const dispatch = useDispatch();
 	const [dropdownOpen, setDropdownOpen] = useState(false);
 	const [addContactOpen, setAddContactOpen] = useState(false);
 	const [settingsOpen, setSettingsOpen] = useState(false);
@@ -50,30 +52,14 @@ function DropMenu() {
 		},
 	});
 
-	// const RadioGroupRadio = styled(StyledRadio, {
-	//     "&:hover": {
-	//         backgroundColor: theme.accCol,
-	//     }
-	// });
+	function logOut() {
+		window.localStorage.removeItem("msg-app-user-details");
+		dispatch(clearUser());
+	}
 
-	const RadioGroupIndicator = styled(StyledIndicator, {
-		"&::after": {
-			backgroundColor: theme.accCol,
-		},
-	});
-
-	// const DialogClose = styled(StyledDialogClose, {
-	//     "&:hover": {
-	//         backgroundColor: blackA.blackA9,
-	//     },
-	//     "&:focus": {
-	//         boxShadow: `0 0 0 2px ${blackA.blackA9}`,
-	//     }
-	// })
-
-	React.useEffect(() => {
-		console.log(settingsOpen, dropdownOpen);
-	}, [settingsOpen, dropdownOpen]);
+	// React.useEffect(() => {
+	// 	console.log(settingsOpen, dropdownOpen);
+	// }, [settingsOpen, dropdownOpen]);
 
 	return (
 		<div>
@@ -83,9 +69,9 @@ function DropMenu() {
 				</DropdownMenuTrigger>
 
 				<DropdownMenuContent
-                css={{
-                    backgroundColor: theme.accCol,
-                }}
+					css={{
+						backgroundColor: theme.accCol,
+					}}
 					sideOffset={15}
 					align="end"
 					hidden={addContactOpen || settingsOpen}
@@ -118,10 +104,12 @@ function DropMenu() {
 
 						<StyledDialogPortal>
 							<StyledDialogOverlay />
-							<StyledDialogContent css={{
-                                backgroundColor: theme.primCol,
-                                color: theme.contrast ? "black" : "white",
-                            }}>
+							<StyledDialogContent
+								css={{
+									backgroundColor: theme.primCol,
+									color: theme.contrast ? "black" : "white",
+								}}
+							>
 								<StyledDialogTitle>
 									Add Contact
 								</StyledDialogTitle>
@@ -130,7 +118,7 @@ function DropMenu() {
 									request
 								</StyledDialogDescription>
 
-                                <AddContact />
+								<AddContact />
 
 								<StyledDialogClose
 									css={{
@@ -189,26 +177,30 @@ function DropMenu() {
 
 						<StyledDialogPortal>
 							<StyledDialogOverlay />
-							<StyledDialogContent css={{
-                                backgroundColor: theme.primCol,
-                                color: theme.contrast ? "black" : "white",
-                                transition: "height 0.25s"
-                            }}>
+							<StyledDialogContent
+								css={{
+									backgroundColor: theme.primCol,
+									color: theme.contrast ? "black" : "white",
+									transition: "height 0.25s",
+								}}
+							>
 								<StyledDialogTitle>Settings</StyledDialogTitle>
 								<StyledDialogDescription>
 									Change your theme, password.
 								</StyledDialogDescription>
-                                
-                                <Box css={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-evenly",
-                                    // border: "1px solid black"
-                                }}>
-                                    <ThemeSettings />
-                                    <ChangePw />
-                                </Box>
-                            
+
+								<Box
+									css={{
+										display: "flex",
+										alignItems: "center",
+										justifyContent: "space-evenly",
+										// border: "1px solid black"
+									}}
+								>
+									<ThemeSettings />
+									<ChangePw />
+								</Box>
+
 								<StyledDialogClose
 									css={{
 										color: theme.contrast
@@ -238,10 +230,12 @@ function DropMenu() {
 						</StyledDialogPortal>
 					</StyledDialog>
 
-					<DropdownMenuSeparator css={{
-                        backgroundColor: theme.primCol,
-                    }} />
-					<DropdownMenuItem>
+					<DropdownMenuSeparator
+						css={{
+							backgroundColor: theme.primCol,
+						}}
+					/>
+					<DropdownMenuItem onClick={logOut}>
 						{/* <img src={LogoutSvg} alt="logout" /> */}
 						<svg
 							width="15"
@@ -267,7 +261,29 @@ function DropMenu() {
 
 export default DropMenu;
 
-{/* <Box
+// const RadioGroupRadio = styled(StyledRadio, {
+//     "&:hover": {
+//         backgroundColor: theme.accCol,
+//     }
+// });
+
+// const RadioGroupIndicator = styled(StyledIndicator, {
+// 	"&::after": {
+// 		backgroundColor: theme.accCol,
+// 	},
+// });
+
+// const DialogClose = styled(StyledDialogClose, {
+//     "&:hover": {
+//         backgroundColor: blackA.blackA9,
+//     },
+//     "&:focus": {
+//         boxShadow: `0 0 0 2px ${blackA.blackA9}`,
+//     }
+// })
+
+{
+	/* <Box
 css={{
     display: "flex",
     // border: "1px solid black",
@@ -347,7 +363,8 @@ css={{
         </Box>
     </RadioGroup>
 </Box>
-</Box> */}
+</Box> */
+}
 
 // <StyledDialog>
 // 							<StyledDialogTrigger asChild>

@@ -13,6 +13,7 @@ Map of the state for this:
                 time: ,
             }
         ],
+        queryOffset: ,
         lastAcc: Latest time in seconds this a particular object such as this was touched by the user,
         // So be used while scanning this state to clear "cache" at regular intervals 
     }
@@ -24,17 +25,18 @@ export const chatSlice = createSlice({
 	initialState: [],
 	reducers: {
 		addMsg: (state, action) => {
-			return state.map((msgsObj) =>
-				msgsObj.contactId === action.payload.contactId
+			return state.map((chatsObj) =>
+				chatsObj.contactId === action.payload.contactId
 					? {
-							contactId: msgsObj.contactId,
+							contactId: chatsObj.contactId,
 							messages: [
-								...msgsObj.messages,
+								...chatsObj.messages,
 								action.payload.message,
 							],
+							queryOffset: chatsObj.queryOffset,
 							lastAcc: Date.now(),
 					  }
-					: msgsObj,
+					: chatsObj,
 			);
 			// return  state.allMessages.map((chatsObj) =>
 			// 		chatsObj.contactId === action.payload.contactId
@@ -51,15 +53,13 @@ export const chatSlice = createSlice({
 		},
 		addMsgs: (state, action) => {
 			const reversedMsgs = action.payload.messages.reverse();
-			console.log(reversedMsgs);
+			// console.log(reversedMsgs);
 			return state.map((chatsObj) =>
 				chatsObj.contactId === action.payload.contactId
 					? {
 							contactId: chatsObj.contactId,
-							messages: [
-								...reversedMsgs,
-								...chatsObj.messages,
-							],
+							messages: [...reversedMsgs, ...chatsObj.messages],
+							queryOffset: chatsObj.queryOffset + 10,
 							lastAcc: Date.now(),
 					  }
 					: chatsObj,
@@ -75,17 +75,28 @@ export const chatSlice = createSlice({
 			// });
 		},
 		createMsgsChat: (state, action) => {
-            // console.log(action.payload);
+			// console.log(action.payload);
 			return [
 				...state,
 				{
 					contactId: action.payload.contactId,
-                    messages: [
-                        ...action.payload.messages.reverse()
-                    ],
+					messages: [...action.payload.messages.reverse()],
+					queryOffset: 0,
 					lastAcc: Date.now(),
 				},
 			];
+		},
+		incrementQueryOffset: (state, action) => {
+			return state.map((chatsObj) =>
+				chatsObj.contactId === action.payload.contactId
+					? {
+							contactId: chatsObj.contactId,
+							messages: chatsObj.messages,
+							queryOffset: chatsObj.queryOffset + 10,
+							lastAcc: Date.now(),
+					  }
+					: chatsObj,
+			);
 		},
 		clearCache: (state, action) => {
 			const newAllMsgsState = [];
@@ -114,8 +125,13 @@ export const chatSlice = createSlice({
 	},
 });
 
-export const { addMsg, addMsgs, createMsgsChat, clearCache } =
-	chatSlice.actions;
+export const {
+	addMsg,
+	addMsgs,
+	createMsgsChat,
+	incrementQueryOffset,
+	clearCache,
+} = chatSlice.actions;
 // export const selectContacts = (state) => state.chats.contacts;
 // export const selectActiveChat = (state) => state.chats.activeChat;
 // export const selectMessages = (state) => state.chats
@@ -126,6 +142,15 @@ export const { addMsg, addMsgs, createMsgsChat, clearCache } =
 //         }
 //     }
 // };
+export const selectQueryOffset = (contactId) => (state) => {
+	for (let i = 0; i < state.chats.length; i++) {
+		if (state.chats[i].contactId === contactId) {
+            // console.log("found");
+			return state.chats[i].queryOffset;
+		}
+	}
+    return null;
+};
 export default chatSlice.reducer;
 
 // addMsg: (state, action) => {
