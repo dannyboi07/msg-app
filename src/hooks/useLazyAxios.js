@@ -31,6 +31,7 @@ export function useLazyAxios(axiosParams) {
 	}
 
 	function lazyFetch() {
+        // console.log(axiosParams)
 		fetchData(axiosParams);
 	}
 

@@ -5,10 +5,10 @@ import {
 	addMsgs,
 	createMsgsChat,
 	selectQueryOffset,
+	decrementQueryOffset,
 } from "../../slices/chatSlice";
 import { selectActiveContact } from "../../slices/contactsSlice";
 import { selectTheme } from "../../slices/themeSlice";
-// import { addMsg } from "../../slices/chatSlice";
 import {
 	StyledMsgInputCtn,
 	MsgInputCtn,
@@ -16,50 +16,36 @@ import {
 import { StyledChat } from "../../stitches-components/homeStyled";
 import ChatProfile from "./ChatProfile";
 import MsgDisplay from "./MsgDisplay";
-import SendIcon from "../../assets/send.svg";
 
 function Chat({ userId, wsConn }) {
 	const dispatch = useDispatch();
 
 	const [msgInput, setMsgInput] = useState("");
-	// const [msgQueryOffset, setMsgQueryOffset] = useState(0);
 	const [stopQuery, setStopQuery] = useState(false);
-	const [toScroll, setToScroll] = useState(false);
+	const [toScroll, setToScroll] = useState(true);
 
 	const msgInCtnRef = useRef(null);
 
 	const activeContactId = useSelector(selectActiveContact);
-	// const msgQueryOffset = useSelector(selectQueryOffset(activeContactId));
 	const theme = useSelector(selectTheme);
-	const msgCache = useSelector((state) => {
-		for (let i = 0; i < state.chats.length; i++) {
-			if (state.chats[i].contactId === activeContactId) {
-				return state.chats[i];
-			}
-		}
-		return null;
-	});
+	const msgCacheExists = useSelector((state) =>
+		state.chats.some((chat) =>
+			chat.contactId === activeContactId ? true : false,
+		),
+	);
+	const msgCacheOffset = useSelector(selectQueryOffset(activeContactId));
 
 	const { lazyFetch, response, isLoading, error } = useLazyAxios({
 		method: "GET",
-		url: `/messages/${activeContactId}?skip=${msgCache}`,
+		url: `/messages/${activeContactId}?skip=${msgCacheOffset}`,
 		withCredentials: true,
 	});
 
-	// useEffect(() => {
-	// 	if (activeContactId) {
-	// 		lazyFetch();
-	// 	}
-	// }, [activeContactId]);
-	// console.log(stopQuery, activeContactId);
-
-	console.log(msgCache);
 	useEffect(() => {
 		if (activeContactId) {
 			setStopQuery(false);
-			// setmsgCache.queryOffset(0);
 			setToScroll(true);
-			if (!msgCache) {
+			if (!msgCacheExists) {
 				dispatch(
 					createMsgsChat({
 						contactId: activeContactId,
@@ -71,38 +57,35 @@ function Chat({ userId, wsConn }) {
 	}, [activeContactId]);
 
 	useEffect(() => {
-		// currContactRef.current = activeContactId;
 		// Don't query the server any more after receiving null
-		if (activeContactId && !stopQuery) {
+		if (
+			activeContactId !== null &&
+			activeContactId !== undefined &&
+			msgCacheOffset !== null &&
+			msgCacheOffset !== undefined &&
+			!stopQuery &&
+			response !== null
+		) {
 			lazyFetch();
 			console.log("lazyfetching");
 		}
-	}, [activeContactId, stopQuery]);
-
-	// console.log(msgQueryOffset)
+	}, [activeContactId, msgCacheOffset, stopQuery]);
 
 	useEffect(() => {
 		if (response && !error) {
-			// console.log(msgQueryOffset);
-			// if (!msgQueryOffset) {
-			// 	// This check is a workaround to check if the first query is being made
-			// 	dispatch(
-			// 		createMsgsChat({
-			// 			contactId: activeContactId,
-			// 			messages: response,
-			// 		}),
-			// 	);
-			// 	return;
-
 			dispatch(
 				addMsgs({
 					contactId: activeContactId,
 					messages: response,
 				}),
 			);
-			// setToScroll(true);
 			// Else If: Response will be null when no more data is available, don't dispatch that response to the store
-		} else if (response === null) setStopQuery(true);
+			// && notify msgDisplay through stopQuery to stop pagination, and decrement the offset
+		} else if (response === null) {
+			console.log("stopping");
+			setStopQuery(true);
+			dispatch(decrementQueryOffset(activeContactId));
+		}
 	}, [response]);
 
 	function sendMsg() {
@@ -146,10 +129,11 @@ function Chat({ userId, wsConn }) {
 			{activeContactId && (
 				<MsgDisplay
 					activeContactId={activeContactId}
-					// setMsgQueryOffset={setMsgQueryOffset}
 					isLoading={isLoading}
 					toScroll={toScroll}
 					setToScroll={setToScroll}
+					stopQuery={stopQuery}
+					// msgQueryOffset={msgCacheOffset}
 				/>
 			)}
 			{activeContactId && (

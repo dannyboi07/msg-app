@@ -1,29 +1,15 @@
-import React, { useEffect, useRef, useLayoutEffect } from "react";
+import React, { useRef, useLayoutEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-// import { selectMessages } from "../../slices/chatSlice";
 import {
 	StyledMsgCtn,
 	StyledMsg,
 	StyledLoadingMsg,
-	// StyledLoadingBg,
 	StyledMsgDate,
 	MsgFlareLeft,
 	MsgFlareRight,
 } from "../../stitches-components/chatStyled";
 import { selectTheme } from "../../slices/themeSlice";
 import { incrementQueryOffset } from "../../slices/chatSlice";
-
-// function scroll(ref, activeContactId, , setMsgQueryOffset, isLoading) {
-// 	// When using a non exact comparison (>/<), this will trigger the setState for every pixel change below that limit, for eg 40
-// 	// which in turn will trigger multiple queries based on the query logic residing in the parent component.
-// 	// isLoading is an indicator that the query is loading, using that to wait until the query is completed to send the next query.
-// 	// Only trigger when scrollTop space is less than 40 pixels and when a previous query has been completed - when isLoading is false
-// 	if (ref.current.scrollTop < 40 && !isLoading) {
-// 		// console.log("reached top", isLoading);
-// 		setMsgQueryOffset((prev) => prev + 10);
-
-// 	}
-// }
 
 function parseSectionTime(msgTime) {
 	const dateTime = new Date(msgTime);
@@ -50,10 +36,10 @@ function parseSectionTime(msgTime) {
 
 function MsgDisplay({
 	activeContactId,
-	setMsgQueryOffset,
 	isLoading,
 	toScroll,
 	setToScroll,
+	stopQuery,
 }) {
 	const dispatch = useDispatch();
 	const msgCtnRef = useRef(null);
@@ -64,22 +50,26 @@ function MsgDisplay({
 	const theme = useSelector(selectTheme);
 
 	function scroll() {
-		if (scrollToBottomRef.current.scrollTop < 40 && !isLoading) {
+		// console.log(scrollToBottomRef.current.scrollTop)
+		console.log(isLoading)
+        if (
+			msgCtnRef.current.scrollTop < 20 &&
+			!stopQuery &&
+			!isLoading &&
+			contactMsgs
+		) {
 			// console.log("reached top", isLoading);
 			// setMsgQueryOffset((prev) => prev + 10);
-			console.log("scroll dispatching");
-            dispatch(incrementQueryOffset(activeContactId));
+			// console.log("scroll dispatching", msgCtnRef.current.scrollTop);
+			dispatch(incrementQueryOffset(activeContactId));
 		}
 	}
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		// Fix scroll to bottom initial mount after initial set of messages are loaded
-		console.log("useeffecting");
 		if (toScroll && contactMsgs) {
 			scrollToBottomRef.current.scrollIntoView();
 			setToScroll(false);
-			console.log("useeffecting if");
-			// scrollToBottomRef.current.mounted = true;
 		} else if (
 			// Scroll to bottom when a new message arrives
 			toScroll &&
@@ -89,25 +79,25 @@ function MsgDisplay({
 				msgCtnRef.current.scrollTop <
 				200
 		) {
-			scrollToBottomRef.current.scrollIntoView({ behavior: "smooth" });
+			if (
+				msgCtnRef.current.scrollHeight -
+					msgCtnRef.current.clientHeight -
+					msgCtnRef.current.scrollTop <
+				200
+			) {
+				scrollToBottomRef.current.scrollIntoView({
+					behavior: "smooth",
+				});
+			}
 			setToScroll(false);
-			console.log("useeffecting else if");
 		}
 	}, [toScroll, contactMsgs]);
 
-	// Fix chat scroll to bottom when switching between contacts
-	// useLayoutEffect(() => {
-	//     console.log("pulling", contactMsgs);
-	// 	scrollToBottomRef.current.scrollIntoView();
-	// }, [activeContactId]);
-
-	// console.log(contactMsgs);
-
-	// useEffect(() => {
-	// 	if (contactMsgs) {
-	// 		contactMsgs.lastAcc = Date.now();
-	// 	}
-	// }, [contactMsgs]);
+	useLayoutEffect(() => {
+		if (contactMsgs) {
+			scrollToBottomRef.current.scrollIntoView();
+		}
+	}, [activeContactId]);
 
 	return (
 		<StyledMsgCtn
@@ -117,15 +107,7 @@ function MsgDisplay({
 		>
 			<div
 				className="viewport-ctn"
-				// Only attach scroll listener when there are messages
-				// Bug fix since the scroll listener was triggering on initial mount (sometimes, possibly due to the "loading" variable)
-				// when the scrollbar is at the top of the scrollable area
-				// and sends a query for next batch of messages
-				onScroll={() =>
-					contactMsgs
-						? scroll(msgCtnRef, setMsgQueryOffset, isLoading)
-						: null
-				}
+				onScroll={scroll}
 				ref={msgCtnRef}
 			>
 				{isLoading &&
@@ -173,25 +155,6 @@ function MsgDisplay({
 					)}
 				{contactMsgs &&
 					contactMsgs.messages.map((message, i) => {
-						// const dateTime = new Date(message.time);
-						// let date = dateTime.toLocaleString("en-US", {
-						// 	dateStyle: "long",
-						// });
-						// const time = dateTime.toLocaleString("en-US", {
-						// 	hour: "numeric",
-						// 	minute: "numeric",
-						// 	hour12: true,
-						// });
-						// const currDate = new Date();
-						// if (
-						// 	dateTime.getMonth() === currDate.getMonth() &&
-						// 	dateTime.getFullYear() === currDate.getFullYear()
-						// ) {
-						// 	if (dateTime.getDate() === currDate.getDate())
-						// 		date = "Today";
-						// 	else if (dateTime.getDate() === currDate.getDate() - 1)
-						// 		date = "Yesterday";
-						// }
 						const dateTime = parseSectionTime(message.time);
 						const rcvdMsg = message.from === activeContactId;
 						if (i === 0) {

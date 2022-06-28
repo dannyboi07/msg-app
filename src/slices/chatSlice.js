@@ -59,7 +59,7 @@ export const chatSlice = createSlice({
 					? {
 							contactId: chatsObj.contactId,
 							messages: [...reversedMsgs, ...chatsObj.messages],
-							queryOffset: chatsObj.queryOffset + 10,
+							queryOffset: chatsObj.queryOffset,
 							lastAcc: Date.now(),
 					  }
 					: chatsObj,
@@ -87,12 +87,25 @@ export const chatSlice = createSlice({
 			];
 		},
 		incrementQueryOffset: (state, action) => {
+			// console.log(action.payload);
 			return state.map((chatsObj) =>
-				chatsObj.contactId === action.payload.contactId
+				chatsObj.contactId === action.payload
 					? {
 							contactId: chatsObj.contactId,
 							messages: chatsObj.messages,
 							queryOffset: chatsObj.queryOffset + 10,
+							lastAcc: Date.now(),
+					  }
+					: chatsObj,
+			);
+		},
+		decrementQueryOffset: (state, action) => {
+			return state.map((chatsObj) =>
+				chatsObj.contactId === action.payload
+					? {
+							contactId: chatsObj.contactId,
+							messages: chatsObj.messages,
+							queryOffset: chatsObj.queryOffset - 10,
 							lastAcc: Date.now(),
 					  }
 					: chatsObj,
@@ -130,6 +143,7 @@ export const {
 	addMsgs,
 	createMsgsChat,
 	incrementQueryOffset,
+    decrementQueryOffset,
 	clearCache,
 } = chatSlice.actions;
 // export const selectContacts = (state) => state.chats.contacts;
@@ -145,11 +159,11 @@ export const {
 export const selectQueryOffset = (contactId) => (state) => {
 	for (let i = 0; i < state.chats.length; i++) {
 		if (state.chats[i].contactId === contactId) {
-            // console.log("found");
+			// console.log("found");
 			return state.chats[i].queryOffset;
 		}
 	}
-    return null;
+	return null;
 };
 export default chatSlice.reducer;
 
