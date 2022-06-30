@@ -55,37 +55,37 @@ function ThemeSettings() {
 		},
 	});
 
-    const customThemeStyle = {
-        marginTop: "0.75em",
-        display: "flex",
-        flexDirection: "column",
-        padding: "0 0.5em",
-    
-        "& > h5": {
-            marginBottom: "0.5em",
-        },
-        "& > label": {
-            display: "flex",
-            justifyContent: "space-between",
-        },
-    
-        "& > button": {
-            fontSize: "1rem",
-            marginTop: "0.5em",
-            padding: "0.5em 1em",
-            color: theme.contrast ? "white" : "black",
-            backgroundColor: theme.accCol,
-            border: "none",
-            borderRadius: "0.25rem",
-            transition: "background-color 0.2s ease-in-out",
-            fontWeight: 500,
-    
-            "&:hover": {
-                cursor: "pointer",
-                // backgroundColor: ,
-            },
-        },
-    };
+	const customThemeStyle = {
+		marginTop: "0.75em",
+		display: "flex",
+		flexDirection: "column",
+		padding: "0 0.5em",
+
+		"& > h5": {
+			marginBottom: "0.5em",
+		},
+		"& > label": {
+			display: "flex",
+			justifyContent: "space-between",
+		},
+
+		"& > button": {
+			fontSize: "1rem",
+			marginTop: "0.5em",
+			padding: "0.5em 1em",
+			color: theme.contrast ? "white" : "black",
+			backgroundColor: theme.accCol,
+			border: "none",
+			borderRadius: "0.25rem",
+			transition: "background-color 0.2s ease-in-out",
+			fontWeight: 500,
+
+			"&:hover": {
+				cursor: "pointer",
+				// backgroundColor: ,
+			},
+		},
+	};
 
 	function handleCustomThemeChange(e) {
 		setCustomTheme({
@@ -93,6 +93,10 @@ function ThemeSettings() {
 			[e.target.name]: e.target.value,
 		});
 		if (e.target.name === "submit-custom") {
+			window.localStorage.setItem(
+				"mumble-theme",
+				JSON.stringify(customTheme),
+			);
 			dispatch(
 				setTheme({
 					...customTheme,

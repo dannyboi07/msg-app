@@ -58,8 +58,8 @@ const cacheTheme = JSON.parse(localStorage.getItem("mumble-theme"));
 export const theme = cacheTheme // Check if theme is set in localStorage
 	? cacheTheme.type === "custom" // Check if theme is custom
 		? {
-				...cacheTheme.theme,
-				contrast: calcContrast(cacheTheme.theme.accCol),
+				...cacheTheme,
+				contrast: calcContrast(cacheTheme.primCol),
 		  }
 		: cacheTheme.type === "light" // Check if theme is light
 		? lightTheme
