@@ -1,65 +1,23 @@
-import React, { useEffect, useRef } from "react";
-import { useSelector, useDispatch } from "react-redux";
-// import { useGetContactsQuery, useWsConnectionQuery } from "../../api/apiSlice";
-// import { setToast } from "../../slices/toastSlice";
+import React, { useRef } from "react";
+import { useSelector } from "react-redux";
 import { selectUserId } from "../../slices/userSlice";
-import { addMsg } from "../../slices/chatSlice";
-// import { selectTheme } from "../../slices/themeSlice";
 import { StyledHome } from "../../stitches-components/homeStyled";
 import Chat from "../Chat/Chat";
 import Contacts from "./Contacts";
+import WsMsgHandler from "./WsMsgHandler";
 
 function Home() {
-	const dispatch = useDispatch();
 	const userId = useSelector(selectUserId);
-    // const cachedContactsMsgs = useSelector(state => state.chats.map(chat => chat.contactId));
-    // const theme = useSelector(state => state.theme);
-    // const [toScroll, setToScroll] = useState(false);
+
 	const wsConn = useRef(null);
-    // console.log(theme)
-
-    // console.log(cachedContactsMsgs);
-	useEffect(() => {
-		wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
-
-		wsConn.current.addEventListener("message", (e) => {
-			const data = JSON.parse(e.data);
-            if (data.last_seen) return;
-            // console.log("home component received ws msg", data)
-			const contactId = data.from === userId ? data.to : data.from;
-			dispatch(
-				addMsg({
-					contactId,
-					message: data,
-				}),
-			);
-		});
-
-		return () => {
-			wsConn.current.close(1000);
-		};
-	}, []);
 
 	return (
 		<StyledHome>
 			<Contacts />
-			<Chat userId={userId} wsConn={wsConn}/>
+			<Chat userId={userId} wsConn={wsConn} />
+            <WsMsgHandler userId={userId} wsConn={wsConn} />
 		</StyledHome>
 	);
 }
 
 export default Home;
-
-// const { data, isFetching, error } = useGetContactsQuery();
-// const { wsData, wsIsFetching, wsError } = useWsConnectionQuery();
-// useEffect(() => {
-// 	if (error) {
-// 		dispatch(
-// 			setToast({
-// 				type: "err",
-// 				message: error,
-// 			}),
-// 		);
-// 	}
-// }, [error]);
-// console.log(wsData, wsIsFetching, wsError);

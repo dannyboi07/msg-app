@@ -5,7 +5,7 @@ import {
 	addMsgs,
 	createMsgsChat,
 	selectQueryOffset,
-	decrementQueryOffset,
+	setQueryDone,
 } from "../../slices/chatSlice";
 import { selectActiveContact } from "../../slices/contactsSlice";
 import { selectTheme } from "../../slices/themeSlice";
@@ -21,17 +21,15 @@ function Chat({ userId, wsConn }) {
 	const dispatch = useDispatch();
 
 	const [msgInput, setMsgInput] = useState("");
-	const [stopQuery, setStopQuery] = useState(false);
-	const [toScroll, setToScroll] = useState(true);
+	const [toScroll, setToScroll] = useState(true); // Notifying child chat comp to pull the scrollbar to the bottom or not
+	const [stopPagin, setStopPagin] = useState(false); // Used by child to stop the scroll listener from triggering after dispatching, i.e used for throttling pagination
 
 	const msgInCtnRef = useRef(null);
 
 	const activeContactId = useSelector(selectActiveContact);
 	const theme = useSelector(selectTheme);
 	const msgCacheExists = useSelector((state) =>
-		state.chats.some((chat) =>
-			chat.contactId === activeContactId ? true : false,
-		),
+		state.chats.find((chat) => chat.contactId === activeContactId),
 	);
 	const msgCacheOffset = useSelector(selectQueryOffset(activeContactId));
 
@@ -43,8 +41,8 @@ function Chat({ userId, wsConn }) {
 
 	useEffect(() => {
 		if (activeContactId) {
-			setStopQuery(false);
 			setToScroll(true);
+			setStopPagin(false);
 			if (!msgCacheExists) {
 				dispatch(
 					createMsgsChat({
@@ -62,14 +60,15 @@ function Chat({ userId, wsConn }) {
 			activeContactId !== null &&
 			activeContactId !== undefined &&
 			msgCacheOffset !== null &&
-			msgCacheOffset !== undefined &&
-			!stopQuery &&
-			response !== null
+			msgCacheOffset !== undefined
 		) {
-			lazyFetch();
-			console.log("lazyfetching");
+			if (!msgCacheExists.queryDone) {
+				if (msgCacheExists.messages.length <= msgCacheOffset) {
+					lazyFetch();
+				}
+			}
 		}
-	}, [activeContactId, msgCacheOffset, stopQuery]);
+	}, [activeContactId, msgCacheOffset]);
 
 	useEffect(() => {
 		if (response && !error) {
@@ -79,12 +78,13 @@ function Chat({ userId, wsConn }) {
 					messages: response,
 				}),
 			);
+			if (msgCacheOffset === 0) setToScroll(true);
+			setStopPagin(false);
 			// Else If: Response will be null when no more data is available, don't dispatch that response to the store
-			// && notify msgDisplay through stopQuery to stop pagination, and decrement the offset
-		} else if (response === null) {
-			console.log("stopping");
-			setStopQuery(true);
-			dispatch(decrementQueryOffset(activeContactId));
+			// && notify msgDisplay through stopPagin to stop pagination
+		} else if (response === null && !error) {
+			dispatch(setQueryDone(activeContactId));
+			setStopPagin(true);
 		}
 	}, [response]);
 
@@ -132,8 +132,9 @@ function Chat({ userId, wsConn }) {
 					isLoading={isLoading}
 					toScroll={toScroll}
 					setToScroll={setToScroll}
-					stopQuery={stopQuery}
-					// msgQueryOffset={msgCacheOffset}
+					// stopQuery={stopQuery}
+					pausePaging={stopPagin}
+					setPausePaging={setStopPagin}
 				/>
 			)}
 			{activeContactId && (

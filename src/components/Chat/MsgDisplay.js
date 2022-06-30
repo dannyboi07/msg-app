@@ -9,7 +9,8 @@ import {
 	MsgFlareRight,
 } from "../../stitches-components/chatStyled";
 import { selectTheme } from "../../slices/themeSlice";
-import { incrementQueryOffset } from "../../slices/chatSlice";
+import { incrementQueryOffset, selectQueryDone } from "../../slices/chatSlice";
+import Message from "./Message";
 
 function parseSectionTime(msgTime) {
 	const dateTime = new Date(msgTime);
@@ -39,59 +40,62 @@ function MsgDisplay({
 	isLoading,
 	toScroll,
 	setToScroll,
-	stopQuery,
+	pausePaging,
+	setPausePaging,
 }) {
 	const dispatch = useDispatch();
 	const msgCtnRef = useRef(null);
 	const scrollToBottomRef = useRef(null);
-	const contactMsgs = useSelector((state) =>
-		state.chats.find((chatsObj) => chatsObj.contactId === activeContactId),
-	);
+	const contactMsgs = useSelector((state) => {
+		for (let i = 0; i < state.chats.length; i++) {
+			if (state.chats[i].contactId === activeContactId) {
+                // console.log("messages useselector")
+				return state.chats[i].messages;
+			}
+		}
+		return null;
+	});
+	const queryDone = useSelector(selectQueryDone(activeContactId));
 	const theme = useSelector(selectTheme);
 
 	function scroll() {
-		// console.log(scrollToBottomRef.current.scrollTop)
-		console.log(isLoading)
-        if (
-			msgCtnRef.current.scrollTop < 20 &&
-			!stopQuery &&
+		if (
+			!queryDone &&
 			!isLoading &&
-			contactMsgs
+			contactMsgs &&
+			!pausePaging &&
+			msgCtnRef.current.scrollTop < 20
 		) {
-			// console.log("reached top", isLoading);
-			// setMsgQueryOffset((prev) => prev + 10);
-			// console.log("scroll dispatching", msgCtnRef.current.scrollTop);
 			dispatch(incrementQueryOffset(activeContactId));
+			setPausePaging(true); // Fix for extra query made when null is received
 		}
 	}
 
 	useLayoutEffect(() => {
 		// Fix scroll to bottom initial mount after initial set of messages are loaded
-		if (toScroll && contactMsgs) {
+		if (toScroll && !isLoading && contactMsgs) {
+            // console.log("useeffect if, pulling hard")
 			scrollToBottomRef.current.scrollIntoView();
 			setToScroll(false);
 		} else if (
 			// Scroll to bottom when a new message arrives
-			toScroll &&
-			contactMsgs &&
-			msgCtnRef.current.scrollHeight -
-				msgCtnRef.current.clientHeight -
-				msgCtnRef.current.scrollTop <
-				200
+			contactMsgs
 		) {
+            // console.log("useeffect else if")
 			if (
 				msgCtnRef.current.scrollHeight -
 					msgCtnRef.current.clientHeight -
 					msgCtnRef.current.scrollTop <
 				200
-			) {
+			) { 
+                // console.log("pulling smooth")
 				scrollToBottomRef.current.scrollIntoView({
 					behavior: "smooth",
 				});
 			}
 			setToScroll(false);
 		}
-	}, [toScroll, contactMsgs]);
+	}, [toScroll, isLoading, contactMsgs]);
 
 	useLayoutEffect(() => {
 		if (contactMsgs) {
@@ -105,11 +109,7 @@ function MsgDisplay({
 				backgroundColor: theme.secCol,
 			}}
 		>
-			<div
-				className="viewport-ctn"
-				onScroll={scroll}
-				ref={msgCtnRef}
-			>
+			<div className="viewport-ctn" onScroll={scroll} ref={msgCtnRef}>
 				{isLoading &&
 					[0, 0, 0, 0, 0].map((_, i) =>
 						i % 2 === 0 ? (
@@ -154,11 +154,19 @@ function MsgDisplay({
 						),
 					)}
 				{contactMsgs &&
-					contactMsgs.messages.map((message, i) => {
+					contactMsgs.map((message, i) => {
 						const dateTime = parseSectionTime(message.time);
 						const rcvdMsg = message.from === activeContactId;
 						if (i === 0) {
 							return (
+								// <Message
+								// 	key={message.message_id}
+								// 	date={dateTime.date}
+								// 	rcvdMsg={rcvdMsg}
+								// 	text={message.text}
+								// 	time={dateTime.time}
+								// 	noFlare={false}
+								// />
 								<React.Fragment key={message.message_id}>
 									<StyledMsgDate
 										css={{
@@ -206,10 +214,18 @@ function MsgDisplay({
 							if (
 								dateTime.dateTime.toLocaleDateString() >
 								new Date(
-									contactMsgs.messages[i - 1].time,
+									contactMsgs[i - 1].time,
 								).toLocaleDateString()
 							) {
 								return (
+									// <Message
+                                    //     key={message.message_id}
+									// 	date={dateTime.date}
+									// 	rcvdMsg={rcvdMsg}
+                                    //     text={message.text}
+                                    //     time={dateTime.time}
+                                    //     noFlare={false}
+									// />
 									<React.Fragment key={message.message_id}>
 										<StyledMsgDate
 											css={{
@@ -255,11 +271,15 @@ function MsgDisplay({
 									</React.Fragment>
 								);
 							} else {
-								if (
-									message.from ===
-									contactMsgs.messages[i - 1].from
-								) {
+								if (message.from === contactMsgs[i - 1].from) {
 									return (
+                                        // <Message 
+                                        //     key={message.message_id}
+                                        //     rcvdMsg={rcvdMsg}
+                                        //     text={message.text}
+                                        //     time={dateTime.time}
+                                        //     noFlare={true}
+                                        // />
 										<React.Fragment
 											key={message.message_id}
 										>
@@ -282,6 +302,14 @@ function MsgDisplay({
 									);
 								}
 								return (
+                                    // <Message 
+                                    //     key={message.message_id}
+                                    //     rcvdMsg={rcvdMsg}
+                                    //     text={message.text}
+                                    //     time={dateTime.time}
+                                    //     noFlare={true}
+                                    //     marginTop="0.75em"
+                                    // />
 									<StyledMsg
 										css={{
 											backgroundColor: theme.primCol,
@@ -324,19 +352,3 @@ function MsgDisplay({
 }
 
 export default MsgDisplay;
-
-// return (
-// 	<StyledMsg
-// 		css={{
-// 			alignSelf:
-// 				message.from === activeContactId
-// 					? "flex-start"
-// 					: "flex-end",
-// 		}}
-// 		key={message.message_id}
-// 	>
-// 		<p>{message.text}</p>
-// 		<p>{date}</p>
-// 		<p>{time}</p>
-// 	</StyledMsg>
-// );
