@@ -1,17 +1,17 @@
 import { styled, keyframes } from "@stitches/react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { violet, mauve, blackA } from "@radix-ui/colors";
+import { violet, mauve, blackA, grass } from "@radix-ui/colors";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 const StyledHome = styled("div", {
 	width: "100%",
 	minHeight: "100vh",
 	display: "flex",
-	// border: "1px solid red",
 });
 
 const StyledContactList = styled("div", {
 	width: "35%",
+    maxWidth: 350,
 
 	"& > div:first-child": {
 		padding: "1em 1.75em",
@@ -35,34 +35,53 @@ const StyledContact = styled("div", {
 	height: "4.5em",
 	display: "flex",
 	alignItems: "center",
-	"&:hover": {
-		cursor: "pointer",
-	},
+	transition: "backdrop-filter 0.15s",
 
-	"&::before, &::after": {
+	"&::after": {
 		position: "absolute",
+		bottom: 0,
 		content: "",
 		width: "calc(100% - 90px)",
 		height: 1,
 		left: 80,
-		backgroundColor: "Black",
-	},
-
-	"&::before": {
-		top: 0,
-	},
-	"&::after": {
-		bottom: 0,
 	},
 
 	"& > div": {
+		height: 55,
+		flexGrow: 1,
+		marginRight: 10,
+		// border: "1px solid black",
 		display: "flex",
-		flexDirection: "column",
-		justifyContent: "center",
+		justifyContent: "space-between",
 		alignItems: "center",
 
-		"& > p": {
-			fontSize: "1.125rem",
+		"& > div": {
+			"&:first-child": {
+				height: "100%",
+				display: "flex",
+				flexDirection: "column",
+				justifyContent: "space-evenly",
+
+				"& > p": {
+					"&:first-child": {
+						fontSize: "1.125rem",
+					},
+
+                    "&.pndng-msg": {
+                        maxWidth: 200,
+                        maxHeight: 20,
+                        overflow: "hidden"
+                    }
+				},
+			},
+
+			"&.pndng-count": {
+				marginRight: "0.5em",
+				padding: "0.25em 0.5em",
+				borderRadius: "100%",
+				color: "white",
+				backgroundColor: grass.grass8,
+			},
 		},
 	},
 });
@@ -202,7 +221,11 @@ const StyledArrow = styled(DropdownMenuPrimitive.Arrow, {
 export { StyledContactList, StyledContact, StyledChat, StyledHome, StyledItem };
 
 export const DropdownMenu = DropdownMenuPrimitive.Root;
-export const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+export const DropdownMenuTrigger = styled(DropdownMenuPrimitive.Trigger, {
+	"&:hover": {
+		cursor: "pointer",
+	},
+});
 export const DropdownMenuContent = StyledContent;
 export const DropdownMenuItem = StyledItem;
 // export const DropdownMenuCheckboxItem = StyledCheckboxItem;
@@ -277,31 +300,31 @@ const StyledDialogDescription = styled(DialogPrimitive.Description, {
 });
 
 const StyledDialogClose = styled(DialogPrimitive.Close, {
-    all: "unset",
-    position: "absolute",
-    top: 15,
-    right: 15,
-    width: 30,
-    height: 30,
-    borderRadius: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+	all: "unset",
+	position: "absolute",
+	top: 15,
+	right: 15,
+	width: 30,
+	height: 30,
+	borderRadius: "100%",
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "center",
 
-    "&:hover": {
-        backgroundColor: blackA.blackA7,
-    },
-    "&:focus": {
-        boxShadow: `0 0 0 2px ${blackA.blackA7}`,
-    }
-})
+	"&:hover": {
+		backgroundColor: blackA.blackA7,
+	},
+	"&:focus": {
+		boxShadow: `0 0 0 2px ${blackA.blackA7}`,
+	},
+});
 
 export {
 	StyledDialogOverlay,
 	StyledDialogContent,
 	StyledDialogTitle,
 	StyledDialogDescription,
-    StyledDialogClose
+	StyledDialogClose,
 };
 export const StyledDialog = DialogPrimitive.Root;
 export const StyledDialogTrigger = DialogPrimitive.Trigger;

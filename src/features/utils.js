@@ -64,6 +64,6 @@ export const theme = cacheTheme // Check if theme is set in localStorage
 		: cacheTheme.type === "light" // Check if theme is light
 		? lightTheme
 		: darkTheme // Or return dark theme
-	: darkTheme; // Set default theme
+	: lightTheme; // Set default theme
 
 // { primCol: "#c9e4ca", secCol: "#87bba2", accCol: "#55828b" }

@@ -9,11 +9,9 @@ import {
 function WsMsgHandler({ wsConn, userId }) {
 	const dispatch = useDispatch();
 	// Returns an array with the user IDs of contacts which have an active msg cache
-	// const existingMsgCaches = useSelector(selectExistingCaches);
 	const existingMsgCaches = useSelector(selectExistingCaches);
 	const msgCachesRef = useRef([]);
 
-	console.log(existingMsgCaches);
 	useEffect(() => {
 		wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
 
@@ -47,28 +45,6 @@ function WsMsgHandler({ wsConn, userId }) {
 	useEffect(() => {
 		msgCachesRef.current = existingMsgCaches;
 	}, [existingMsgCaches]);
-
-	// function addMsgHelper(contactId, message) {
-	// 	console.log(msgCachesRef.current, msgCachesRef.current.includes(contactId));
-
-	// 	if (msgCachesRef.current.includes(contactId)) {
-	//         console.log("includes")
-	// 		dispatch(
-	// 			addMsg({
-	// 				contactId,
-	// 				message,
-	// 			}),
-	// 		);
-	// 	} else {
-	//         console.log("includes not")
-	// 		dispatch(
-	// 			createMsgsChat({
-	// 				contactId,
-	// 				messages: [message],
-	// 			}),
-	// 		);
-	// 	}
-	// }
 
 	return <div></div>;
 }

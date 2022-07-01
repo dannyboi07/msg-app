@@ -49,7 +49,7 @@ function MsgDisplay({
 	const contactMsgs = useSelector((state) => {
 		for (let i = 0; i < state.chats.length; i++) {
 			if (state.chats[i].contactId === activeContactId) {
-                // console.log("messages useselector")
+				// console.log("messages useselector")
 				return state.chats[i].messages;
 			}
 		}
@@ -74,21 +74,21 @@ function MsgDisplay({
 	useLayoutEffect(() => {
 		// Fix scroll to bottom initial mount after initial set of messages are loaded
 		if (toScroll && !isLoading && contactMsgs) {
-            // console.log("useeffect if, pulling hard")
+			// console.log("useeffect if, pulling hard")
 			scrollToBottomRef.current.scrollIntoView();
 			setToScroll(false);
 		} else if (
 			// Scroll to bottom when a new message arrives
 			contactMsgs
 		) {
-            // console.log("useeffect else if")
+			// console.log("useeffect else if")
 			if (
 				msgCtnRef.current.scrollHeight -
 					msgCtnRef.current.clientHeight -
 					msgCtnRef.current.scrollTop <
 				200
-			) { 
-                // console.log("pulling smooth")
+			) {
+				// console.log("pulling smooth")
 				scrollToBottomRef.current.scrollIntoView({
 					behavior: "smooth",
 				});
@@ -175,6 +175,9 @@ function MsgDisplay({
 											color: theme.contrast
 												? "white"
 												: "black",
+											position: "sticky",
+											top: 10,
+                                            zIndex: 10
 										}}
 									>
 										{dateTime.date}
@@ -219,12 +222,12 @@ function MsgDisplay({
 							) {
 								return (
 									// <Message
-                                    //     key={message.message_id}
+									//     key={message.message_id}
 									// 	date={dateTime.date}
 									// 	rcvdMsg={rcvdMsg}
-                                    //     text={message.text}
-                                    //     time={dateTime.time}
-                                    //     noFlare={false}
+									//     text={message.text}
+									//     time={dateTime.time}
+									//     noFlare={false}
 									// />
 									<React.Fragment key={message.message_id}>
 										<StyledMsgDate
@@ -234,6 +237,9 @@ function MsgDisplay({
 												color: theme.contrast
 													? "white"
 													: "black",
+												position: "sticky",
+												top: 10,
+                                                zIndex: 10
 											}}
 										>
 											{dateTime.date}
@@ -273,13 +279,13 @@ function MsgDisplay({
 							} else {
 								if (message.from === contactMsgs[i - 1].from) {
 									return (
-                                        // <Message 
-                                        //     key={message.message_id}
-                                        //     rcvdMsg={rcvdMsg}
-                                        //     text={message.text}
-                                        //     time={dateTime.time}
-                                        //     noFlare={true}
-                                        // />
+										// <Message
+										//     key={message.message_id}
+										//     rcvdMsg={rcvdMsg}
+										//     text={message.text}
+										//     time={dateTime.time}
+										//     noFlare={true}
+										// />
 										<React.Fragment
 											key={message.message_id}
 										>
@@ -302,14 +308,14 @@ function MsgDisplay({
 									);
 								}
 								return (
-                                    // <Message 
-                                    //     key={message.message_id}
-                                    //     rcvdMsg={rcvdMsg}
-                                    //     text={message.text}
-                                    //     time={dateTime.time}
-                                    //     noFlare={true}
-                                    //     marginTop="0.75em"
-                                    // />
+									// <Message
+									//     key={message.message_id}
+									//     rcvdMsg={rcvdMsg}
+									//     text={message.text}
+									//     time={dateTime.time}
+									//     noFlare={true}
+									//     marginTop="0.75em"
+									// />
 									<StyledMsg
 										css={{
 											backgroundColor: theme.primCol,

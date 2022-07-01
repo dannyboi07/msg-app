@@ -14,6 +14,7 @@ const StyledMsgCtn = styled("div", {
     boxShadow: "inset -10px -10px 70px -25px rgba(0,0,0,0.75)",
 
 	"& > div.viewport-ctn": {
+        position: "relative",
 		minWidth: "100%",
 		height: "fit-content",
 		maxHeight: "100%",

@@ -12,7 +12,7 @@ import {
 import { selectUserId } from "../../slices/userSlice";
 
 function parseOnline(status) {
-    // console.log(status, new Date(status))
+	// console.log(status, new Date(status))
 	if (status === "Online") return "Online";
 	else {
 		const statusDate = new Date(status);
@@ -25,7 +25,6 @@ function parseOnline(status) {
 		const statusLocaleDateString = statusDate.toLocaleDateString();
 
 		const currDate = new Date();
-		// const currLocaleDateString = currDate.toLocaleDateString();
 		if (
 			statusDate.getMonth() === currDate.getMonth() &&
 			statusDate.getFullYear() === currDate.getFullYear()
@@ -40,39 +39,47 @@ function parseOnline(status) {
 }
 
 function ChatProfile({ wsConn }) {
-    const userId = useSelector(selectUserId);
+	const userId = useSelector(selectUserId);
 	const contactDetails = useSelector(selectActiveContactDetails);
-    const [lastSeen, setLastSeen] = useState("");
-    const themePrimCol = useSelector(state => state.theme.primCol)
-	// const contactDetails1 = useSelector(state => state.contacts.contacts.find(contact => contact.userId))
+	const [lastSeen, setLastSeen] = useState("");
+	const themePrimCol = useSelector((state) => state.theme.primCol);
 
-    useEffect(() => {
-        function handleWsStatusListener(e) {
-            const data = JSON.parse(e.data);
-            if (data.last_seen) {
-                setLastSeen(parseOnline(data.last_seen))
-            }
-        }
-        wsConn.current.addEventListener("message", handleWsStatusListener)
-        wsConn.current.send(JSON.stringify({
-            type: "getstatus",
-            from: userId,
-            to: contactDetails.user_id
-        }));
-        wsConn.current.send(JSON.stringify({
-            type: "sub",
-            from: userId,
-            to: contactDetails.user_id
-        }))
+	useEffect(() => {
+		function handleWsStatusListener(e) {
+			const data = JSON.parse(e.data);
+			if (data.last_seen) {
+				setLastSeen(parseOnline(data.last_seen));
+			}
+		}
+		wsConn.current.addEventListener("message", handleWsStatusListener);
+		wsConn.current.send(
+			JSON.stringify({
+				type: "getstatus",
+				from: userId,
+				to: contactDetails.user_id,
+			}),
+		);
+		wsConn.current.send(
+			JSON.stringify({
+				type: "sub",
+				from: userId,
+				to: contactDetails.user_id,
+			}),
+		);
 
-        return(() => wsConn.current.removeEventListener("message", handleWsStatusListener))
-
-    }, [contactDetails.user_id]);
+		return () =>
+			wsConn.current.removeEventListener(
+				"message",
+				handleWsStatusListener,
+			);
+	}, [contactDetails.user_id]);
 
 	return (
-		<StyledChatProfile css={{
-            backgroundColor: themePrimCol
-        }}>
+		<StyledChatProfile
+			css={{
+				backgroundColor: themePrimCol,
+			}}
+		>
 			<Avatar
 				css={{
 					width: 50,

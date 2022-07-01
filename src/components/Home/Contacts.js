@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useAxios } from "../../hooks/useAxios";
-import { addContact } from "../../slices/contactsSlice";
+import { addContact, clearPendingMsgs, updatePendingMsgs } from "../../slices/contactsSlice";
 import { setActiveContact } from "../../slices/contactsSlice";
 import { selectTheme } from "../../slices/themeSlice";
 import {
@@ -15,7 +15,6 @@ import {
 	AvatarFallback,
 } from "../../stitches-components/commonStyled";
 import { parseInitials } from "../../features/utils";
-import OptionsSvg from "../../assets/options.svg";
 import DropMenu from "./DropMenu";
 
 function Contacts() {
@@ -29,11 +28,18 @@ function Contacts() {
 
 	useEffect(() => {
 		if (response) {
-			dispatch(addContact(response));
+			const parsedResponse = response.map((contact) => {
+				return {
+					...contact,
+					message: {
+						text: "",
+						count: 0,
+					},
+				};
+			});
+			dispatch(addContact(parsedResponse));
 		}
 	}, [response]);
-
-	// console.log(response, isLoading);
 
 	if (isLoading) {
 		return (
@@ -62,37 +68,30 @@ function Contacts() {
 				</h1>
 				<DropMenu />
 			</div>
-            <hr />
-			{response && response.map((contact) => {
-				const nameInitials = parseInitials(contact.name);
-				return (
-					<Contact
-						key={contact.user_id}
-						onClick={() =>
-							dispatch(setActiveContact(contact.user_id))
-						}
-					>
-						<Avatar
-							css={{
-								width: 55,
-								height: 55,
-								margin: "0 0.75em 0 0.75em",
-							}}
-						>
-							<AvatarImage
-								src={contact.profile_pic}
-								alt={contact.name}
-							/>
-							<AvatarFallback delayMs={0}>
-								{nameInitials}
-							</AvatarFallback>
-						</Avatar>
-						<div>
-							<p>{contact.name}</p>
-						</div>
-					</Contact>
-				);
-			})}
+			<hr />
+			{response &&
+				response.map((contact) => {
+					const nameInitials = parseInitials(contact.name);
+					return (
+						<Contact
+							key={contact.user_id}
+							contactId={contact.user_id}
+							contactName={contact.name}
+                            nameInitials={nameInitials}
+							contactProfPic={contact.profile_pic}
+							onClick={() =>
+								{dispatch(setActiveContact(contact.user_id))
+                                dispatch(clearPendingMsgs(contact.user_id))}
+							}
+						/>
+					);
+				})}
+            <button onClick={() => dispatch(updatePendingMsgs({
+                contactId: 13,
+                text: "kjaskldjfkljalksjdfkalksjdfkjaksfdalsdfkasjldfj kasjd flas  flas df"
+            }))}>
+                Dispatch
+            </button>
 		</StyledContactList>
 	);
 }
