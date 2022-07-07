@@ -22,6 +22,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
+	// "github.com/joho/godotenv"
+
 	"msg-app/backend/controller"
 	"msg-app/backend/db"
 	"msg-app/backend/redis"
@@ -63,6 +65,11 @@ type Person struct {
 // 	-----END OPENSSH PRIVATE KEY-----
 func main() {
 	utils.InitLogger()
+
+	// err := godotenv.Load(".env")
+	// if err != nil {
+	// 	utils.Log.Fatal("Error loading env vars")
+	// }
 
 	// privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	// if err != nil {
@@ -174,12 +181,15 @@ func main() {
 			r.Put("/changePw", controller.ChangePassword)
 			r.Get("/searchUser", controller.SearchUser)
 			r.Post("/addContact", controller.AddContact)
+
 		})
 
 		r.Group(func(r chi.Router) {
 			r.Post("/register", controller.RegisterUser)
 			r.Post("/login", controller.LoginUser)
+			r.Get("/auth/logout", controller.LogoutUser)
 			r.Post("/test", controller.TestToken)
+			r.Get("/auth/refresh_token", controller.RefreshAccToken)
 		})
 	})
 

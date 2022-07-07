@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"msg-app/backend/types"
@@ -16,11 +17,15 @@ import (
 var db *pgxpool.Pool
 var dbContext context.Context
 
-const dbUrl string = "postgres://postgres:dannyDpg404@localhost:5432/test"
+// var dbUname = os.Getenv("DB_UNAME")
+// var dbPwd = os.Getenv("DB_PWD")
+
+var dbUrl string = os.Getenv("DB_URL") + "/test"
 
 func InitDB() error {
 	dbContext = context.Background()
 	var err error
+	fmt.Println(dbUrl)
 	db, err = pgxpool.Connect(dbContext, dbUrl)
 	if err != nil {
 		return err

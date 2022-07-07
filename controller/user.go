@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"msg-app/backend/db"
+	"msg-app/backend/redis"
 	"msg-app/backend/types"
 	"msg-app/backend/utils"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -179,22 +181,69 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("name", *user.Name, "email", *user.Email, "id", *user.UserId, "userprof", *user.Profile_Pic)
-	//var finalUserDetails types.UserWithJwt
-	userForToken := types.UserForToken{UserId: user.UserId, Email: user.Email}
-	token, err := utils.CreateJwt(userForToken)
+
+	userForToken := types.UserForToken{UserId: *user.UserId, Email: *user.Email}
+	accToken, accTkExp, err := utils.CreateJwt(userForToken)
 	if err != nil {
 		http.Error(w, "Internal Server Error, try again", http.StatusInternalServerError)
-		// fmt.Println(err)
 		utils.Log.Println("cntrl error: creating jwt", err)
 		return
 	}
-	// finalUserDetails := types.UserWithJwt{Name: user.Name, Email: user.Email, Profile_Pic: user.Profile_Pic, Token: &token}
-	// finalUserDetails := types.UserWithoutJwt{Name: user.Name, Email: user.Email, Profile_Pic: user.Profile_Pic}
-	cookie := &http.Cookie{Name: "accessToken", Value: token, MaxAge: 3600 * 6, Path: "/", HttpOnly: true}
+	refToken, refTkExp, err := utils.CreateRefreshJwt(userForToken)
+	if err != nil {
+		http.Error(w, "Interval Server Error, try again", http.StatusInternalServerError)
+		utils.Log.Println("cntrl err: creating ref tk", err)
+		return
+	}
+
+	err = redis.SetRefToken(strconv.Itoa(int(*user.UserId))+"-"+"refTk", refToken, refTkExp)
+	if err != nil {
+		http.Error(w, "Internal Server Error, try again", http.StatusInternalServerError)
+		utils.Log.Println("cntrl err: Setting redis ref tk", err)
+		return
+	}
+
+	utils.Log.Println(refTkExp, refTkExp, accTkExp)
+	accTkCookie := &http.Cookie{Name: "accessToken", Value: accToken, MaxAge: accTkExp, Path: "/api", HttpOnly: true}
+	refTkCookie := &http.Cookie{Name: "refreshToken", Value: refToken, MaxAge: int(refTkExp.Seconds()), Path: "/api/auth", HttpOnly: true}
 	w.Header().Set("Content-Type", "application/json")
-	// w.Header().Set("Set-Cookie", "cookieName=cookieValue")
-	http.SetCookie(w, cookie)
+	http.SetCookie(w, accTkCookie)
+	http.SetCookie(w, refTkCookie)
+
+	// userDetails := types.UserLogin{UserId: user.UserId, User: user.User, AccTokenExp: int64(accTkExp), RefTokenExp: int64(expTime.Seconds())}
+	// user.AccTokenExp = accTkExp
+	// user.RefTokenExp = refTkExp
 	json.NewEncoder(w).Encode(user)
+}
+
+func LogoutUser(w http.ResponseWriter, r *http.Request) {
+	accTkCookie, err := r.Cookie("accessToken")
+
+	if err == nil {
+		// http.Error(w, "Missing access token", http.StatusForbidden)
+		// utils.Log.Println("cntrl err: getting accTk cookie", err, r.RemoteAddr)
+		// return
+		accTkCookie.MaxAge = -1
+		accTkCookie.Path = "/api"
+		http.SetCookie(w, accTkCookie)
+	}
+	refTkCookie, err := r.Cookie("refreshToken")
+	if err == nil {
+		// http.Error(w, "Missing refresh token", http.StatusForbidden)
+		// utils.Log.Println("cntrl err: getting refTk cookie", err, r.RemoteAddr)
+		// return
+
+		mapClaims, err, _ := utils.VerifyUserToken(refTkCookie.Value)
+		if err == nil || err != nil && err.Error() == "Token expired" {
+			redis.DelRefToken(strconv.Itoa(int(mapClaims["UserId"].(float64))) + "-" + "refTk")
+		}
+
+		refTkCookie.MaxAge = -1
+		refTkCookie.Path = "/api/auth"
+
+		http.SetCookie(w, refTkCookie)
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func ChangePassword(w http.ResponseWriter, r *http.Request) {
@@ -270,19 +319,12 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func SearchUser(w http.ResponseWriter, r *http.Request) {
-	// r.Body = http.MaxBytesReader(w, r.Body, 100000)
-	// userEmail := chi.URLParam(r, "email")
 	var userEmail string
 	if userEmail = r.URL.Query().Get("email"); userEmail == "" {
 		http.Error(w, "Email field is empty", http.StatusBadRequest)
 		utils.Log.Println("client error: email field is empty", r.RemoteAddr)
 		return
 	}
-	// if userEmail == "" {
-	// 	http.Error(w, "Email field is empty", http.StatusBadRequest)
-	// 	utils.Log.Println("client error: email field is empty", r.RemoteAddr)
-	// 	return
-	// }
 
 	userId := r.Context().Value("userDetails").(jwt.MapClaims)["UserId"].(int64)
 
@@ -299,20 +341,6 @@ func SearchUser(w http.ResponseWriter, r *http.Request) {
 	isContact := db.ContactExists(userId, *user.UserId)
 	result := types.ContactSearch{UserId: *user.UserId, Name: *user.Name, Profile_Pic: *user.Profile_Pic, IsFriend: isContact}
 	json.NewEncoder(w).Encode(result)
-	// if contactExists := db.ContactExists(userId, userEmail); contactExists {
-	// 	http.Error(w, "Contact already exists", http.StatusBadRequest)
-	// 	utils.Log.Println("client error: contact already exists", r.RemoteAddr)
-	// 	return
-	// }
-
-	// err := db.AddContact(userId, userEmail)
-	// if err != nil {
-	// 	http.Error(w, "Internal Server Error", http.StatusBadRequest)
-	// 	utils.Log.Println("cntrl error: adding contact to db", err)
-	// 	return
-	// }
-
-	// w.WriteHeader(http.StatusOK)
 }
 
 func AddContact(w http.ResponseWriter, r *http.Request) {
@@ -352,26 +380,71 @@ func AddContact(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// user, err := db.GetUser(userChangePw.Email)
-// if err != nil {
-// 	if err.Error() == "no rows in result set" {
-// 		http.Error(w, "User doesn't exist", http.StatusNotFound)
-// 		return
-// 	}
-// 	http.Error(w, "Internal Server Error", http.StatusBadRequest)
-// 	utils.Log.Println("cntrl error: getting user from db", err)
-// 	// fmt.Println(err.Error())
-// 	return
-// }
-// trueUser := utils.AuthPassword(*user.Password, *userChangePw.OldPassword)
-// if !trueUser {
-// 	http.Error(w, "Incorrect password", http.StatusUnauthorized)
-// 	return
-// } else if *userChangePw.NewPassword == *user.Password {
-// 	http.Error(w, "New password is same as old password", http.StatusBadRequest)
-// 	return
-// } else if *userChangePw.NewPassword == *userChangePw.OldPassword {
-// 	http.Error(w, "New password is same as old password", http.StatusBadRequest)
-// 	return
-// }
-// user.Password = userChangePw.NewPassword
+func RefreshAccToken(w http.ResponseWriter, r *http.Request) {
+	refreshToken, err := r.Cookie("refreshToken")
+	if err != nil {
+		http.Error(w, "Missing refresh token", http.StatusForbidden)
+		utils.Log.Println("client error: refresh token missing", r.RemoteAddr)
+		return
+	}
+
+	mapClaims, err, statusInt := utils.VerifyUserToken(refreshToken.Value)
+	if err != nil {
+		http.Error(w, err.Error(), statusInt)
+		utils.Log.Println("client/server err:", err, r.RemoteAddr)
+		return
+	}
+
+	exists, err := db.UserExistsById(int64(mapClaims["UserId"].(float64)))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		utils.Log.Println("ref token err: getting user from db", err)
+		return
+	} else if !exists {
+		http.Error(w, "User doesn't exist", http.StatusUnauthorized)
+		utils.Log.Println("client err: user doesn't exist", r.RemoteAddr)
+		return
+	}
+
+	refTkKey := strconv.FormatInt(int64(mapClaims["UserId"].(float64)), 10) + "-" + "refTk"
+	refTokenExists := redis.RefTokenExists(refTkKey, refreshToken.Value)
+	if !refTokenExists {
+		http.Error(w, "Unauthorized refresh token", http.StatusUnauthorized)
+		utils.Log.Println("client err: refresh token not found", r.RemoteAddr)
+		return
+	}
+
+	userDetails := types.UserForToken{UserId: int64(mapClaims["UserId"].(float64)), Email: mapClaims["Email"].(string)}
+	newRefToken, refTkExp, err := utils.CreateRefreshJwt(userDetails)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		utils.Log.Println("server err: creating ref token")
+		return
+	}
+
+	err = redis.SetRefToken(refTkKey, newRefToken, refTkExp)
+	if err != nil {
+		http.Error(w, "Interval Server Error", http.StatusInternalServerError)
+		utils.Log.Println("server err: error setting redis ref tk")
+		return
+	}
+
+	newAccToken, accTkExp, err := utils.CreateJwt(userDetails)
+	if err != nil {
+		http.Error(w, "Interval Server Error", http.StatusInternalServerError)
+		utils.Log.Println("cntrl err: error creating acc tk", err)
+		redis.DelRefToken(refTkKey)
+		return
+	}
+
+	accTkCookie := &http.Cookie{Name: "accessToken", Value: newAccToken, MaxAge: accTkExp, Path: "/api", HttpOnly: true}
+	rekTkCookie := &http.Cookie{Name: "refreshToken", Value: newRefToken, MaxAge: int(refTkExp.Seconds()), Path: "/api/auth", HttpOnly: true}
+
+	http.SetCookie(w, accTkCookie)
+	http.SetCookie(w, rekTkCookie)
+
+	w.WriteHeader(http.StatusOK)
+	// w.Header().Set("Content-Type", "application/json")
+	// tokenExps := types.TokenExps{AccTokenExp: accTkExp, RefTokenExp: refTkCreated}
+	// json.NewEncoder(w).Encode(tokenExps)
+}

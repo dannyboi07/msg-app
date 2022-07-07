@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"msg-app/backend/utils"
 	"strconv"
+	"time"
 
 	"github.com/go-redis/redis/v9"
 )
@@ -104,4 +105,28 @@ func PubSubWait(pubsub *redis.PubSub) error {
 	return nil
 }
 
-// func UnSubUserStatus(userId int64, )
+func SetRefToken(key, refreshToken string, expTime time.Duration) error {
+	err := redisClient.Set(ctx, key, refreshToken, expTime).Err()
+	if err != nil {
+		utils.Log.Println("redis err: setting refresh token")
+		return err
+	}
+	return nil
+}
+
+func RefTokenExists(key, refTk string) bool {
+	// refTokenExists := redisClient.Exists(ctx, key).Val()
+	// if refTokenExists == 0 {
+	// 	return false
+	// }
+	// return true
+	refreshToken := redisClient.Get(ctx, key)
+	if refreshToken.Val() != refTk {
+		return false
+	}
+	return true
+}
+
+func DelRefToken(key string) {
+	redisClient.Del(ctx, key)
+}

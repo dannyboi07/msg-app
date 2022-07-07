@@ -180,12 +180,6 @@ func ReadPartToString(multiPart *multipart.Part) string {
 	// return buf.String(), nil
 }
 
-// func ReadPartToNum(multipart *multipart.Part) int {
-// 	buf := bytes.NewBuffer(nil)
-// 	buf.ReadFrom(multipart)
-// 	return buf
-// }
-
 func FileUpload(file *multipart.Part, buf *bufio.Reader, dir string, ext *mimetype.MIME, maxFileSize int64) (int, error, string) {
 	timeNow := time.Now().Format("2006-01-02-15-04-05")
 	// fileLink := "http://localhost:8080/" + dir + timeNow + "-*" + ext.Extension()
@@ -230,24 +224,26 @@ type CustomClaims struct {
 	types.UserForToken
 }
 
-func CreateJwt(userDetails types.UserForToken) (string, error) {
+func CreateJwt(userDetails types.UserForToken) (string, int, error) {
 	token := jwt.New(jwt.GetSigningMethod("RS256"))
-	// expireTime := time.Now().Add(time.Hour * 1)
+	createdTime := time.Now()
+	expireTime := createdTime.Add(time.Minute * 15)
 	// var expireTime int64 = 3600
 	token.Claims = &CustomClaims{
 		// &jwt.StandardClaims{
 		// 	ExpiresAt: expireTime,
 		// },
 		&jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 6)),
+			ExpiresAt: jwt.NewNumericDate(expireTime),
 		},
 		userDetails,
 	}
 	signedToken, err := token.SignedString(PrivKey)
 	if err != nil {
-		return "", nil
-	}
-	return signedToken, nil
+		return "", 0, err
+	} //int(expireTime.Sub(createdTime).Seconds())
+	// Log.Println(int(expireTime.Sub(createdTime)), expireTime.Sub(createdTime))
+	return signedToken, int(expireTime.Sub(createdTime).Seconds()), nil
 }
 
 func VerifyUserToken(token string) (jwt.MapClaims, error, int) {
@@ -282,7 +278,23 @@ func VerifyUserToken(token string) (jwt.MapClaims, error, int) {
 		fmt.Println("Couldn't handle this token:", err)
 		return nil, err, http.StatusInternalServerError
 	}
-	//return nil, nil, 0
+}
 
-	// err := jwt.SigningMethodES256.Verify()
+func CreateRefreshJwt(userDetails types.UserForToken) (string, time.Duration, error) {
+	refreshToken := jwt.New(jwt.GetSigningMethod("RS256"))
+	createdTime := time.Now()
+	expireTime := createdTime.AddDate(0, 0, 7)
+
+	refreshToken.Claims = &CustomClaims{
+		&jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expireTime),
+		},
+		userDetails,
+	}
+	signedToken, err := refreshToken.SignedString(PrivKey)
+	if err != nil {
+		return "", 0, err
+	}
+
+	return signedToken, expireTime.Sub(createdTime), nil
 }

@@ -16,6 +16,19 @@ type User struct {
 
 type UserWithId struct {
 	UserId *int64 `json:"user_id"`
+	// TokenExps
+	User
+}
+
+type TokenExps struct {
+	AccTokenExp time.Time `json:"acc_tk_exp"`
+	RefTokenExp time.Time `json:"ref_tk_exp"`
+}
+
+type UserLogin struct {
+	UserId      *int64 `json:"user_id"`
+	AccTokenExp int64  `json:"acc_tk_exp"`
+	RefTokenExp int64  `json:"ref_tk_exp"`
 	User
 }
 
@@ -33,8 +46,8 @@ type UserLoginDbOutout struct {
 }
 
 type UserForToken struct {
-	UserId *int64
-	Email  *string
+	UserId int64
+	Email  string
 }
 
 type UserWithJwt struct {

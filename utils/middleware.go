@@ -11,7 +11,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		accessToken, err := r.Cookie("accessToken")
 		if err != nil {
-			http.Error(w, "Missing access token cookie", http.StatusUnauthorized)
+			http.Error(w, "Missing access token", http.StatusUnauthorized)
 			return
 		}
 		// bearer := r.Header.Get("Authorization")
@@ -30,6 +30,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			Log.Println("midwre/client error: ", err, r.RemoteAddr)
 			return
 		}
+
 		exists, err := db.UserExistsById(int64(mapClaims["UserId"].(float64)))
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -41,6 +42,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			Log.Println("midwre-client error: user not found", r.RemoteAddr)
 			return
 		}
+
 		mapClaims["UserId"] = int64(mapClaims["UserId"].(float64))
 		ctxWithUserDetails := context.WithValue(r.Context(), "userDetails", mapClaims)
 		next.ServeHTTP(w, r.WithContext(ctxWithUserDetails))

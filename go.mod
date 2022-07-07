@@ -12,6 +12,7 @@ require (
 	github.com/go-redis/redis/v9 v9.0.0-beta.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/jackc/pgx/v4 v4.16.1
+	github.com/joho/godotenv v1.4.0
 	golang.org/x/crypto v0.0.0-20211209193657-4570a0811e8b
 )
 
