@@ -1,15 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { clearUser } from "../../slices/userSlice";
+import { useLazyAxios } from "../../hooks/useLazyAxios";
 import {
-	DropdownMenuArrow,
-	DropdownMenuCheckboxItem,
-	// DropdownMenuItem,
-	DropdownMenuItemIndicator,
-	DropdownMenuLabel,
-	DropdownMenuRadioGroup,
-	DropdownMenuRadioItem,
-	DropdownMenuTriggerItem,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuSeparator,
@@ -24,18 +17,14 @@ import {
 	StyledDialogPortal,
 	StyledDialogOverlay,
 } from "../../stitches-components/homeStyled";
-import {
-	RadioGroup,
-	StyledRadio,
-	StyledIndicator,
-	Box,
-} from "../../stitches-components/menuStyled";
+import { Box } from "../../stitches-components/menuStyled";
 import { styled } from "@stitches/react";
-import OptionsSvg from "../../assets/options.svg";
-import { blackA } from "@radix-ui/colors";
 import ThemeSettings from "./ThemeSettings";
 import ChangePw from "./ChangePw";
 import AddContact from "./AddContact";
+import { setToast } from "../../slices/toastSlice";
+import { eraseChatState } from "../../slices/chatSlice.js";
+import { eraseContactsState } from "../../slices/contactsSlice";
 
 function DropMenu() {
 	const dispatch = useDispatch();
@@ -44,6 +33,27 @@ function DropMenu() {
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const theme = useSelector((state) => state.theme);
 
+	const { lazyFetch, isLoading, error } = useLazyAxios({
+		method: "GET",
+		url: "/auth/logout",
+		withCredentials: true,
+	});
+
+	useEffect(() => {
+		if (!isLoading && !error) {
+			localStorage.removeItem("mumble-user");
+			dispatch(
+				setToast({
+					type: "info",
+					title: "Logged out",
+				}),
+			);
+			dispatch(clearUser());
+			dispatch(eraseChatState());
+			dispatch(eraseContactsState());
+		}
+	}, [isLoading, error]);
+
 	const DropdownMenuItem = styled(StyledItem, {
 		color: theme.contrast ? "white" : "black",
 		"&:focus": {
@@ -51,11 +61,6 @@ function DropMenu() {
 			color: theme.contrast ? "black" : "white",
 		},
 	});
-
-	function logOut() {
-		window.localStorage.removeItem("msg-app-user-details");
-		dispatch(clearUser());
-	}
 
 	return (
 		<div>
@@ -250,7 +255,7 @@ function DropMenu() {
 							backgroundColor: theme.primCol,
 						}}
 					/>
-					<DropdownMenuItem onClick={logOut}>
+					<DropdownMenuItem onClick={lazyFetch}>
 						{/* <img src={LogoutSvg} alt="logout" /> */}
 						<svg
 							width="15"

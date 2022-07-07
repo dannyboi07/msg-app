@@ -47,6 +47,7 @@ const StyledContact = styled("div", {
 	},
 
 	"& > div": {
+        // maxWidth: "100%",
 		height: 55,
 		flexGrow: 1,
 		marginRight: 10,
@@ -57,6 +58,7 @@ const StyledContact = styled("div", {
 
 		"& > div": {
 			"&:first-child": {
+                // maxWidth: "100%",
 				height: "100%",
 				display: "flex",
 				flexDirection: "column",
@@ -65,22 +67,36 @@ const StyledContact = styled("div", {
 				"& > p": {
 					"&:first-child": {
 						fontSize: "1.125rem",
+                        width: "fit-content"
 					},
 
-                    "&.pndng-msg": {
-                        maxWidth: 200,
-                        maxHeight: 20,
-                        overflow: "hidden"
-                    }
+                    // "&.pndng-msg": {
+                    //     maxWidth: "70%",
+                    //     // maxWidth: 200,
+                    //     maxHeight: 20,
+                    //     overflow: "hidden"
+                    // }
 				},
+
+                "& > div.pndng-msg-ctn": {
+                    maxWidth: 200,
+                    width: "100%",
+                    // flexGrow: 1,
+                    maxHeight: 20,
+                    overflow: "hidden"
+                }
 			},
 
 			"&.pndng-count": {
 				marginRight: "0.5em",
-				padding: "0.25em 0.5em",
+                minHeight: 30,
+                minWidth: 30,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
 				borderRadius: "100%",
 				color: "white",
-				backgroundColor: grass.grass8,
+				backgroundColor: grass.grass9,
 			},
 		},
 	},
@@ -261,6 +277,8 @@ const StyledDialogOverlay = styled(DialogPrimitive.Overlay, {
 	backgroundColor: blackA.blackA9,
 	position: "fixed",
 	inset: 0,
+    zIndex: 2,
+    
 	"@media (prefers-reduced-motion: no-preference)": {
 		animation: `${overlayShow} 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
 	},
@@ -279,6 +297,8 @@ const StyledDialogContent = styled(DialogPrimitive.Content, {
 	maxWidth: "600px",
 	maxHeight: "87.5vh",
 	padding: 25,
+    zIndex: 3,
+
 	"@media (prefers-reduced-motion: no-preference)": {
 		animation: `${contentShow} 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards`,
 	},

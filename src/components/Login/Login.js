@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { styled } from "@stitches/react";
 import { LoginBg, LoginForm } from "../../stitches-components/loginStyled";
 import {
 	StyledInput as Input,
@@ -8,6 +9,12 @@ import { useDispatch } from "react-redux";
 import url from "../../api/url";
 import { setUser } from "../../slices/userSlice";
 import { setToast } from "../../slices/toastSlice";
+
+// const Input = styled(StyledInput, {
+//     "&::before": {
+
+//     }
+// })
 
 function Login() {
 	const dispatch = useDispatch();
@@ -44,12 +51,12 @@ function Login() {
 					response.json().then((resJson) => {
 						dispatch(setUser(resJson));
 						localStorage.setItem(
-							"msg-app-user-details",
+							"mumble-user",
 							JSON.stringify(resJson),
 						);
                         dispatch(setToast({
-                            type: "info",
-                            message: "Logged in"
+                            type: "suc",
+                            title: "Logged in"
                         }))
 					});
 				} else {
@@ -57,7 +64,7 @@ function Login() {
 						dispatch(
 							setToast({
 								type: "err",
-								message: resText,
+								title: resText,
 							}),
 						),
 					);
@@ -75,6 +82,7 @@ function Login() {
 				<label>
 					Email:
 					<Input
+                        variant="email"
 						name="email"
 						type="email"
 						value={userDetails.email}

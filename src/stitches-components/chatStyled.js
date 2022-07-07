@@ -1,7 +1,9 @@
+import { blackA } from "@radix-ui/colors";
 import { keyframes, styled } from "@stitches/react";
 
 const StyledMsgCtn = styled("div", {
 	// flexShrink: 3,
+	position: "relative",
 	flexGrow: "1",
 	minWidth: 0,
 	// maxHeight: "100%",
@@ -11,10 +13,10 @@ const StyledMsgCtn = styled("div", {
 	overflow: "auto",
 	// flexDirection: "column",
 	// justifyContent: "flex-end",
-    boxShadow: "inset -10px -10px 70px -25px rgba(0,0,0,0.75)",
+	boxShadow: "inset -10px -10px 70px -25px rgba(0,0,0,0.75)",
 
 	"& > div.viewport-ctn": {
-        position: "relative",
+		position: "relative",
 		minWidth: "100%",
 		height: "fit-content",
 		maxHeight: "100%",
@@ -22,24 +24,16 @@ const StyledMsgCtn = styled("div", {
 		display: "flex",
 		flexDirection: "column",
 		overflow: "auto",
-		// border: "1px solid blue",
 
-        "& > div:not(:last-child), & > span": {
-            boxShadow: "0 1px 0 1px rgba(0,0,0,0.1)",
+		"& > div:not(:last-child)": {
+			boxShadow: "0 1px 0 1px rgba(0,0,0,0.1)",
 
-            // "& > div": {
-            //     boxShadow: "0 1px 0 1px rgba(0,0,0,0.1)",
-            // }
-        }
+			// "& > div": {
+			//     boxShadow: "0 1px 0 1px rgba(0,0,0,0.1)",
+			// }
+		},
 	},
-	// "& > *:first-child": {
-	//     marginBottom: "calc(100% - 30px)"
-	// }
 });
-
-// const StyledMsgCtn = styled("div", {
-
-// })
 
 const StyledMsg = styled("div", {
 	position: "relative",
@@ -59,30 +53,13 @@ const StyledMsg = styled("div", {
 	"& > span": {
 		fontSize: "0.825rem",
 	},
-	// border: "1px solid black",
 });
 
 const animLoadBg = keyframes({
 	"100%": {
 		transform: "translateX(100%)",
 	},
-	// "0%": {
-	//     backgroundPosition: "left"
-	// },
-	// "100%": {
-	//     backgroundPosition: "right"
-	// },
-	// "100%": {
-	//     backgroundPosition: "left"
-	// }
 });
-
-// const StyledLoadingBg = styled("div", {
-//     height: "100%",
-//     background: "linear-gradient(to right, gray, lightgray)",
-//     backgroundSize: "100% 100%",
-//     animation: `${animLoadBg} 3s infinite alternate`,
-// })
 
 const StyledLoadingMsg = styled("div", {
 	position: "relative",
@@ -93,7 +70,6 @@ const StyledLoadingMsg = styled("div", {
 	display: "flex",
 	flexDirection: "column",
 	justifyContent: "space-around",
-	// border: "1px solid black",
 
 	"& > div:not(:last-child)": {
 		margin: "4px 0",
@@ -139,7 +115,7 @@ const StyledMsgFlare = styled("div", {
 });
 
 const MsgFlareLeft = styled(StyledMsgFlare, {
-	left: -12.5,
+	left: -12,
 	clipPath: "polygon(100% 0, 0 0, 100% 100%)",
 	borderRadius: "0.25em 0 0 0",
 });
@@ -151,7 +127,6 @@ const MsgFlareRight = styled(StyledMsgFlare, {
 });
 
 const StyledMsgDate = styled("span", {
-	// border: "1px solid black",
 	fontSize: "0.975rem",
 	margin: "0.75em",
 	padding: "0.35em 0.65em",
@@ -160,25 +135,29 @@ const StyledMsgDate = styled("span", {
 
 const MsgInputCtn = styled("div", {
 	display: "flex",
-    backgroundColor: "transparent",
-    alignItems: "center",
+	backgroundColor: "transparent",
+	alignItems: "center",
+	// border: "1px solid red",
+	padding: "0.85em 1em",
 
 	"& > button": {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
 		fontSize: "0.95rem",
-		padding: "0.25em 0.5em",
+		// padding: "0.25em 0.5em",
 		width: 45,
-		height: 45,
-        borderRadius: "50%",
-        border: "none",
-        backgroundColor: "white",
+		height: 42,
+		borderRadius: 5,
+		border: "none",
+		backgroundColor: "white",
+        // border: "1px solid black",
+        transition: "backdrop-filter 0.25s",
 
-        "&:not([disabled]):hover": {
-            cursor: "pointer",
-            backdropFilter: "contrast(50%)",
-        },
+		"&:not([disabled]):hover": {
+			cursor: "pointer",
+			backdropFilter: "contrast(70%)",
+		},
 
 		"& > svg": {
 			width: "65%",
@@ -195,9 +174,9 @@ const StyledMsgInputCtn = styled("div", {
 	border: "1px solid black",
 	display: "flex",
 	alignItems: "center",
-    borderRadius: "1.5em",
-    overflow: "hidden",
-    // backgroundColor: "white",
+	// borderRadius: "1.5em",
+	overflow: "hidden",
+	// backgroundColor: "white",
 
 	"& > textarea": {
 		display: "block",
@@ -215,7 +194,7 @@ const StyledMsgInputCtn = styled("div", {
 		border: 0,
 		overflowY: "auto",
 		border: "1px solid black",
-        backgroundColor: "transparent",
+		backgroundColor: "transparent",
 
 		"&:focus": {
 			outline: "none",
@@ -235,38 +214,86 @@ const StyledMsgInputCtn = styled("div", {
 	},
 });
 
+const StyledMsgInput = styled("div", {
+    position: "relative",
+	flexGrow: 1,
+	// border: "1px solid black",
+    minHeight: 42,
+	maxHeight: 150,
+	overflow: "auto",
+	padding: "0.75em 1em",
+    marginRight: "1em",
+    borderRadius: 5,
+
+    "&:focus": {
+        outline: "none"
+    },
+
+    "&.shw-plchldr::before": {
+        position: "absolute",
+        content: "Type a message...",
+        color: blackA.blackA11,
+        top: "0.75em",
+        left: "1em",
+        pointerEvents: "none"
+    }
+});
+
 const StyledChatProfile = styled("div", {
 	minHeight: 70,
-	// border: "1px solid black",
 	display: "flex",
 	alignItems: "center",
 
-    "& > div:last-child": {
-        height: 45,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-around",
+	"& > div:last-child": {
+		height: 45,
+		display: "flex",
+		flexDirection: "column",
+		justifyContent: "space-around",
 
-        "& > p": {
-            "&:first-child": {
-                fontSize: "1.125rem"
-            },
-            "&:last-child": {
-                fontSize: "0.925rem"
-            }
-        }
-    }
+		"& > p": {
+			"&:first-child": {
+				fontSize: "1.125rem",
+			},
+			"&:last-child": {
+				fontSize: "0.925rem",
+			},
+		},
+	},
+});
+
+const StyledGoDown = styled("div", {
+	position: "absolute",
+	bottom: 15,
+	right: 32,
+	height: 40,
+	width: 40,
+	borderRadius: "100%",
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "center",
+	transform: "scale(0,0)",
+	transition: "transform 0.25s",
+
+	"&:hover": {
+		cursor: "pointer",
+		backdropFilter: "contrast(70%)",
+	},
+
+	"&.go-down-btn--show": {
+		transform: "scale(1,1)",
+	},
 });
 
 export {
 	StyledMsgCtn,
 	StyledMsg,
+	StyledMsgInput,
 	StyledLoadingMsg,
-	// StyledLoadingBg,
 	StyledMsgDate,
-    MsgInputCtn,
+	MsgInputCtn,
 	StyledMsgInputCtn,
 	StyledChatProfile,
 	MsgFlareLeft,
 	MsgFlareRight,
+	StyledGoDown,
 };

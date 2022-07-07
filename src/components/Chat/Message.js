@@ -20,6 +20,9 @@ function Message({ date, rcvdMsg, text, time, noFlare, marginTop }) {
 						alignSelf: "center",
 						backgroundColor: theme.accCol,
 						color: theme.contrast ? "white" : "black",
+                        position: "sticky",
+                        top: 10,
+                        zIndex: 1
 					}}
 				>
 					{date}

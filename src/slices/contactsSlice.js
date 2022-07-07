@@ -81,6 +81,12 @@ export const contactsSlice = createSlice({
 				),
 			};
 		},
+		eraseContactsState: () => {
+			return {
+				activeContactId: null,
+				contacts: [],
+			};
+		},
 	},
 });
 
@@ -89,6 +95,7 @@ export const {
 	setActiveContact,
 	updatePendingMsgs,
 	clearPendingMsgs,
+    eraseContactsState
 } = contactsSlice.actions;
 export const selectContacts = (state) => state.contacts.contacts;
 export const selectActiveContact = (state) => state.contacts.activeContactId;

@@ -9,9 +9,11 @@ import {
 } from "../../slices/chatSlice";
 import { selectActiveContact } from "../../slices/contactsSlice";
 import { selectTheme } from "../../slices/themeSlice";
+// import { styled } from "@stitches/react";
 import {
 	StyledMsgInputCtn,
 	MsgInputCtn,
+	StyledMsgInput,
 } from "../../stitches-components/chatStyled";
 import { StyledChat } from "../../stitches-components/homeStyled";
 import ChatProfile from "./ChatProfile";
@@ -24,7 +26,8 @@ function Chat({ userId, wsConn }) {
 	const [toScroll, setToScroll] = useState(true); // Notifying child chat comp to pull the scrollbar to the bottom or not
 	const [stopPagin, setStopPagin] = useState(false); // Used by child to stop the scroll listener from triggering after dispatching, i.e used for throttling pagination
 
-	const msgInCtnRef = useRef(null);
+	// const msgInpRef = useRef(null);
+	const [msgInpPlc, setMsgInpPlc] = useState("shw-plchldr");
 
 	const activeContactId = useSelector(selectActiveContact);
 	const theme = useSelector(selectTheme);
@@ -32,6 +35,10 @@ function Chat({ userId, wsConn }) {
 		state.chats.find((chat) => chat.contactId === activeContactId),
 	);
 	const msgCacheOffset = useSelector(selectQueryOffset(activeContactId));
+
+	// const msgInput = styled(StyledMsgInput, {
+	//     color: theme.
+	// })
 
 	const { lazyFetch, response, isLoading, error } = useLazyAxios({
 		method: "GET",
@@ -88,8 +95,8 @@ function Chat({ userId, wsConn }) {
 		}
 	}, [response]);
 
-	function sendMsg() {
-		if (msgInput.length > 0) {
+	function sendMsg(e) {
+		if (msgInput.trim().length > 0) {
 			const msg = {
 				type: "msg",
 				from: userId,
@@ -97,6 +104,7 @@ function Chat({ userId, wsConn }) {
 				text: msgInput,
 			};
 			wsConn.current.send(JSON.stringify(msg));
+            e.currentTarget.textContent = "";
 			setMsgInput("");
 		}
 	}
@@ -143,37 +151,33 @@ function Chat({ userId, wsConn }) {
 						backgroundColor: "transparent",
 					}}
 				>
-					<StyledMsgInputCtn ref={msgInCtnRef}>
-						<textarea
-							style={{
-								color: theme.contrast ? "black" : "white",
-							}}
-							value={msgInput}
-							onChange={(e) => {
-								setMsgInput(e.target.value);
-								msgInCtnRef.current.style.height = "auto";
-								msgInCtnRef.current.style.height =
-									e.target.scrollHeight < 30
-										? `${45}px`
-										: `${e.target.scrollHeight * 2}px`;
-							}}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && !e.shiftKey) {
-									e.preventDefault();
-									sendMsg();
-								}
-							}}
-							placeholder="Message..."
-							required
-						/>
-					</StyledMsgInputCtn>
+					<StyledMsgInput
+						className={msgInpPlc}
+						onFocus={() => setMsgInpPlc("")}
+						onBlur={() =>
+							msgInput.length === 0 && setMsgInpPlc("shw-plchldr")
+						}
+						css={{
+							backgroundColor: theme.secCol,
+						}}
+						contentEditable={true}
+						onInput={(e) =>
+							setMsgInput(e.currentTarget.textContent)
+						}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" && !e.shiftKey) {
+								e.preventDefault();
+								sendMsg(e);
+							}
+						}}
+					/>
 					<button
 						style={{
-							backgroundColor: theme.secCol,
+							backgroundColor: "transparent",
 							color: theme.contrast ? "black" : "white",
 						}}
 						onClick={sendMsg}
-						disabled={msgInput === "" ? true : false}
+						disabled={msgInput.trim().length === 0 ? true : false}
 					>
 						<svg
 							width="15"
@@ -197,6 +201,33 @@ function Chat({ userId, wsConn }) {
 }
 
 export default Chat;
+
+{
+	/* <StyledMsgInputCtn ref={msgInCtnRef}>
+						<textarea
+							style={{
+								color: theme.contrast ? "black" : "white",
+							}}
+							value={msgInput}
+							onChange={(e) => {
+								setMsgInput(e.target.value);
+								msgInCtnRef.current.style.height = "auto";
+								msgInCtnRef.current.style.height =
+									e.target.scrollHeight < 30
+										? `${45}px`
+										: `${e.target.scrollHeight * 2}px`;
+							}}
+							onKeyDown={(e) => {
+								if (e.key === "Enter" && !e.shiftKey) {
+									e.preventDefault();
+									sendMsg();
+								}
+							}}
+							placeholder="Message..."
+							required
+						/>
+					</StyledMsgInputCtn> */
+}
 
 // msgInCtnRef.current.style.height = "auto"
 //e.target.style.height = e.target.scrollHeight < 50 ? `${30}px` : `${e.target.scrollHeight}px`

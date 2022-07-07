@@ -1,5 +1,5 @@
 import { styled, keyframes } from "@stitches/react";
-import { blackA, muave, slate } from "@radix-ui/colors";
+import { blackA, muave, slate, grassA, blueA, redA } from "@radix-ui/colors";
 import * as ToastPrimitive from "@radix-ui/react-toast";
 
 const VIEWPORT_PADDING = 25;
@@ -36,16 +36,18 @@ const StyledViewport = styled(ToastPrimitive.Viewport, {
 });
 
 const StyledToast = styled(ToastPrimitive.Root, {
-	backgroundColor: "White",
+	//border: "1px solid black",
+	backgroundColor: "white",
 	borderRadius: 6,
 	boxShadow:
 		"hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px",
-	padding: 15,
-	display: "grid",
-	gridTemplateAreas: '"title action" "description action"',
-	gridTemplateColumns: "auto max-content",
-	columnGap: 15,
-	alignItems: "center",
+	// padding: 15,
+	display: "flex",
+	// gridTemplateAreas: '"graphic-holder title" "graphic-holder description"',
+	// gridTemplateColumns: "max-content auto",
+	// columnGap: 12,
+    // rowGap: 5,
+	// alignItems: "stretch",
 
 	"@media (prefers-reduced-motion: no-preference)": {
 		'&[data-state="open"]': {
@@ -65,26 +67,70 @@ const StyledToast = styled(ToastPrimitive.Root, {
 			animation: `${swipeOut} 100ms ease-out forwards`,
 		},
 	},
+
+	// "& > *": {
+	// 	border: "1px solid red",
+	// },
+
+	"& > div.graphic-ctn": {
+		// gridArea: "graphic-ctn",
+        // height: "100%",
+        // width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 21px 0 17px",
+
+        "&.suc": {
+            backgroundColor: grassA.grassA9
+        },
+
+        "&.err": {
+            backgroundColor: redA.redA9
+        },
+
+        "&.info": {
+            backgroundColor: blueA.blueA8
+        }
+	},
+
+    "& > div.text-ctn": {
+        padding: "0.925em"
+    },
+
+	"&.suc": {
+		border: `5px solid ${grassA.grassA9}`,
+	},
+
+	"&.info": {
+		border: `5px solid ${blueA.blueA8}`,
+	},
+
+    "&.err": {
+        border: `5px solid ${redA.redA9}`
+    }
 });
 
 const StyledTitle = styled(ToastPrimitive.Title, {
-	gridArea: "title",
-	marginBottom: 5,
+	// gridArea: "title",
+	// marginBottom: "0em",
 	fontWeight: 500,
-	color: slate.slate12,
-	fontSize: 15,
+    // margin: "12px 12px 0px 0",
+	// color: slate.slate12,
+	fontSize: "1rem",
 });
 
 const StyledDescription = styled(ToastPrimitive.Description, {
-	gridArea: "description",
-	margin: 0,
-	color: slate.slate11,
-	fontSize: 13,
+	// gridArea: "description",
+	// margin: "0 12px 12px 0",
+	// color: slate.slate11,
+    marginTop: "0.30em",
+	fontSize: "0.925rem",
 	lineHeight: 1.3,
 });
 
 const StyledAction = styled(ToastPrimitive.Action, {
-	gridArea: "action",
+	// gridArea: "action",
 });
 
 export const ToastProvider = ToastPrimitive.Provider;
@@ -94,3 +140,7 @@ export const ToastTitle = StyledTitle;
 export const ToastDescription = StyledDescription;
 export const ToastAction = StyledAction;
 export const ToastClose = ToastPrimitive.Close;
+
+export { StyledToast };
+
+// , StyledViewport, StyledTitle, StyledDescription, StyledAction

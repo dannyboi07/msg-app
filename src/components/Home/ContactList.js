@@ -1,5 +1,5 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import {
 	selectActiveContact,
 	selectPendingMsgs,
@@ -13,6 +13,7 @@ import {
 	AvatarImage,
 	AvatarFallback,
 } from "../../stitches-components/commonStyled";
+import { setToast } from "../../slices/toastSlice";
 
 function Contact({
 	onClick,
@@ -21,6 +22,7 @@ function Contact({
 	nameInitials,
 	contactProfPic,
 }) {
+    const dispatch = useDispatch();
 	const theme = useSelector(selectTheme);
 	const activeContactId = useSelector(selectActiveContact);
 	const contactPendingMsgs = useSelector(selectPendingMsgs(contactId));
@@ -39,19 +41,33 @@ function Contact({
 			backgroundColor: `${theme.accCol}`,
 		},
 
-		"& > div > div:first-child > p.pndng-msg": {
+		"& > div > div:first-child > div.pndng-msg-ctn > p.pndng-msg": {
 			color: theme.contrast ? blackA.blackA11 : whiteA.whiteA11,
 		},
 	});
+
+    useEffect(() => {
+        if (contactPendingMsgs.count > 0) {
+            dispatch(setToast({
+                type: "message",
+                message: contactPendingMsgs.text,
+                contactDetails: {
+                    name: contactName,
+                    profile_pic: contactProfPic,
+                }
+            }))
+        };
+
+    }, [contactPendingMsgs])
 
 	return (
 		<SContact onClick={onClick}>
 			<Avatar
 				css={{
 					width: 55,
-                    height: 55,
-                    minWidth: 55,
-                    minHeight: 55,
+					height: 55,
+					minWidth: 55,
+					minHeight: 55,
 					margin: "0 0.75em 0 0.75em",
 				}}
 			>
@@ -63,13 +79,17 @@ function Contact({
 				<div>
 					<p className="contact-name">{contactName}</p>
 					{contactPendingMsgs && contactPendingMsgs.count > 0 && (
-						<p className="pndng-msg">
-							{contactPendingMsgs.text}
-						</p>
+						<div className="pndng-msg-ctn">
+							<p className="pndng-msg">
+								{contactPendingMsgs.text}
+							</p>
+						</div>
 					)}
 				</div>
 				{contactPendingMsgs && contactPendingMsgs.count > 0 && (
-					<div className="pndng-count">{contactPendingMsgs.count}</div>
+					<div className="pndng-count">
+						{contactPendingMsgs.count}
+					</div>
 				)}
 			</div>
 		</SContact>

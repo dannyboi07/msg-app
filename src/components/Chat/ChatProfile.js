@@ -51,28 +51,36 @@ function ChatProfile({ wsConn }) {
 				setLastSeen(parseOnline(data.last_seen));
 			}
 		}
-		wsConn.current.addEventListener("message", handleWsStatusListener);
-		wsConn.current.send(
-			JSON.stringify({
-				type: "getstatus",
-				from: userId,
-				to: contactDetails.user_id,
-			}),
-		);
-		wsConn.current.send(
-			JSON.stringify({
-				type: "sub",
-				from: userId,
-				to: contactDetails.user_id,
-			}),
-		);
+
+		if (wsConn.current) {
+			// wsConn.current.addEventListener("open", () => {
+				wsConn.current.addEventListener(
+					"message",
+					handleWsStatusListener,
+				);
+				wsConn.current.send(
+					JSON.stringify({
+						type: "getstatus",
+						from: userId,
+						to: contactDetails.user_id,
+					}),
+				);
+				wsConn.current.send(
+					JSON.stringify({
+						type: "sub",
+						from: userId,
+						to: contactDetails.user_id,
+					}),
+				);
+			// });
+		}
 
 		return () =>
 			wsConn.current.removeEventListener(
 				"message",
 				handleWsStatusListener,
 			);
-	}, [contactDetails.user_id]);
+	}, [contactDetails.user_id, wsConn.current]);
 
 	return (
 		<StyledChatProfile

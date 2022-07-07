@@ -9,9 +9,24 @@ const StyledForm = styled("form", {
 });
 
 const StyledInput = styled("input", {
-	fontSize: "1rem",
+	position: "relative",
+    fontSize: "1rem",
 	width: "100%",
 	display: "block",
+
+    "&::before": {
+        position: "absolute",
+        width: "50%",
+        height: "100%",
+        top: 0,
+        left: 0,
+    },
+
+    variants: {
+        "&::before": {
+            content: "Email"
+        }
+    }
 });
 
 const StyledButton = styled("button", {

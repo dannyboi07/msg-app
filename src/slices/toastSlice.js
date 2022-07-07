@@ -7,19 +7,13 @@ import { createSlice } from "@reduxjs/toolkit";
 
 export const toastSlice = createSlice({
 	name: "toast",
-	initialState: {
-        type: "info",
-        message: null
-    },
+	initialState: null,
 	reducers: {
 		setToast: (state, action) => {
             return action.payload
         },
 		clearToast: () => {
-			return {
-				type: "info",
-				message: null,
-			};
+			return null
 		},
 	},
 });

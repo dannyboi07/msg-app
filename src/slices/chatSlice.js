@@ -52,14 +52,23 @@ export const chatSlice = createSlice({
 		addMsg: (state, action) => {
 			return state.map((chatsObj) =>
 				chatsObj.contactId === action.payload.contactId
-					? {
-							...chatsObj,
-							messages: [
-								...chatsObj.messages.slice(1),
-								action.payload.message,
-							],
-							lastAcc: Date.now(),
-					  }
+					? chatsObj.messages.length >= 10
+						? {
+								...chatsObj,
+								messages: [
+									...chatsObj.messages.slice(1),
+									action.payload.message,
+								],
+								lastAcc: Date.now(),
+						  }
+						: {
+								...chatsObj,
+								messages: [
+									...chatsObj.messages,
+									action.payload.message,
+								],
+								lastAcc: Date.now(),
+						  }
 					: chatsObj,
 			);
 		},
@@ -109,6 +118,9 @@ export const chatSlice = createSlice({
 			}
 			return newAllMsgsState;
 		},
+		eraseChatState: () => {
+			return [];
+		},
 	},
 });
 
@@ -119,6 +131,7 @@ export const {
 	incrementQueryOffset,
 	setQueryDone,
 	clearCache,
+    eraseChatState
 } = chatSlice.actions;
 
 export const selectQueryOffset = (contactId) => (state) => {

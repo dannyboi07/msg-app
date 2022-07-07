@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const userDetails = JSON.parse(localStorage.getItem("msg-app-user-details"))
-
+const userDetails = JSON.parse(localStorage.getItem("mumble-user"))
+// console.log(userDetails)
 export const userSlice = createSlice({
     name: "user",
     initialState: userDetails,

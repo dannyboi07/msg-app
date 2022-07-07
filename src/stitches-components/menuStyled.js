@@ -38,7 +38,15 @@ export const StyledIndicator = styled(RadioGroupPrimitive.Indicator, {
 	},
 });
 
-export const Box = styled("div", {});
+export const Box = styled("div", {
+	variants: {
+		color: {
+			green: {
+				backgroundColor: "black",
+			},
+		},
+	},
+});
 
 export const RadioGroup = RadioGroupPrimitive.Root;
 // export const RadioGroupRadio = StyledRadio;

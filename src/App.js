@@ -1,10 +1,9 @@
 import React from "react";
-// import logo from "./logo.svg";
-// import { Counter } from "./features/counter/Counter";
 import {
 	BrowserRouter as Router,
 	Routes,
 	Route,
+	Navigate,
 } from "react-router-dom";
 import { StyledApp } from "./stitches-components/appStyled";
 import Register from "./components/Register/Register";
@@ -46,8 +45,12 @@ function App() {
 							<Route path="/auth/login" element={<Login />} />
 						</Route>
 						<Route path="/" element={<AuthRouter />}>
-                            <Route path="/" element={<Home />}/>
-                        </Route>
+							<Route path="/" element={<Home />} />
+							{/* <Route
+								path="/*"
+								element={<Navigate to="/" replace />}
+							/> */}
+						</Route>
 					</Routes>
 				</Router>
 			</StyledApp>
