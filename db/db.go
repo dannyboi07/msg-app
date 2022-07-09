@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -20,13 +19,13 @@ var dbContext context.Context
 // var dbUname = os.Getenv("DB_UNAME")
 // var dbPwd = os.Getenv("DB_PWD")
 
-var dbUrl string = os.Getenv("DB_URL") + "/test"
+// var dbUrl string = os.Getenv("DB_URL") + "/test"
 
 func InitDB() error {
 	dbContext = context.Background()
 	var err error
-	fmt.Println(dbUrl)
-	db, err = pgxpool.Connect(dbContext, dbUrl)
+	// fmt.Println("dbUrl", dbUrl, "dbUname", dbUname, "dbPwd", dbPwd)
+	db, err = pgxpool.Connect(dbContext, "postgres://"+os.Getenv("DB_UNAME")+":"+os.Getenv("DB_PWD")+"@localhost:5432/"+os.Getenv("DB_NAME"))
 	if err != nil {
 		return err
 	}
@@ -257,36 +256,36 @@ func GetUserLastSeen(userId int64) (types.UserLastSeen, error) {
 	return resultTime, nil
 }
 
-type dbStruct struct {
-	db        pgx.Conn
-	dbContext context.Context
-}
+// type dbStruct struct {
+// 	db        pgx.Conn
+// 	dbContext context.Context
+// }
 
-type Person struct {
-	Name  string `json:"name,omitempty"`
-	Phone int    `json:"phone,omitempty"`
-}
+// type Person struct {
+// 	Name  string `json:"name,omitempty"`
+// 	Phone int    `json:"phone,omitempty"`
+// }
 
-type dbMethods interface {
-	SelectRow() Person
-	SelectRows() pgx.Rows
-}
+// type dbMethods interface {
+// 	SelectRow() Person
+// 	SelectRows() pgx.Rows
+// }
 
-func (db dbStruct) DbConnect() pgx.Conn {
-	dbConn, err := pgx.Connect(db.dbContext, dbUrl)
-	if err != nil {
-		log.Fatal("Unable to connect to database: ", err.Error())
-	}
-	fmt.Println("Connected to database")
-	return *dbConn
-}
+// func (db dbStruct) DbConnect() pgx.Conn {
+// 	dbConn, err := pgx.Connect(db.dbContext, dbUrl)
+// 	if err != nil {
+// 		log.Fatal("Unable to connect to database: ", err.Error())
+// 	}
+// 	fmt.Println("Connected to database")
+// 	return *dbConn
+// }
 
-func (dbInstance dbStruct) DbClose() {
-	dbInstance.db.Close(dbInstance.dbContext)
-}
+// func (dbInstance dbStruct) DbClose() {
+// 	dbInstance.db.Close(dbInstance.dbContext)
+// }
 
-func (dbInstance dbStruct) SelectRow(id int) Person {
-	var person = Person{}
-	dbInstance.db.QueryRow(dbInstance.dbContext, "SELECT name, phone FROM test WHERE t_id = $1", id).Scan(&person.Name, &person.Phone)
-	return person
-}
+// func (dbInstance dbStruct) SelectRow(id int) Person {
+// 	var person = Person{}
+// 	dbInstance.db.QueryRow(dbInstance.dbContext, "SELECT name, phone FROM test WHERE t_id = $1", id).Scan(&person.Name, &person.Phone)
+// 	return person
+// }

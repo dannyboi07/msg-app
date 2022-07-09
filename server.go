@@ -22,11 +22,12 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
-	// "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 
 	"msg-app/backend/controller"
 	"msg-app/backend/db"
 	"msg-app/backend/redis"
+	"msg-app/backend/s3Media"
 	"msg-app/backend/types"
 	"msg-app/backend/utils"
 	ws "msg-app/backend/websocket"
@@ -66,10 +67,12 @@ type Person struct {
 func main() {
 	utils.InitLogger()
 
-	// err := godotenv.Load(".env")
-	// if err != nil {
-	// 	utils.Log.Fatal("Error loading env vars")
-	// }
+	err := godotenv.Load()
+	if err != nil {
+		utils.Log.Fatal("Error loading env vars")
+	}
+
+	s3Media.InitS3()
 
 	// privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	// if err != nil {
@@ -143,14 +146,15 @@ func main() {
 	// utils.PubKey = publicKey
 
 	err = db.InitDB()
-	redis.InitRedis()
+	defer db.CloseDB()
 	if err != nil {
 		log.Fatal("Unable to connect to database: ", err.Error())
 	}
 	fmt.Println("Connected to database")
-	defer db.CloseDB()
 
-	ws.WsClients = &types.Clients{make(map[int64]*websocket.Conn), sync.RWMutex{}}
+	redis.InitRedis()
+
+	ws.WsClients = &types.Clients{ClientConns: make(map[int64]*websocket.Conn), RWMutex: sync.RWMutex{}}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -241,6 +245,8 @@ func main() {
 	// })
 
 	r.Post("/upload", uploadHandler)
+	r.Post("/uploads3", uploadS3)
+	r.Get("/gets3/{imgName}", getFromS3)
 
 	if err := http.ListenAndServe(":8080", r); err != nil {
 		log.Fatal("Error starting server: ", err.Error())
@@ -269,6 +275,56 @@ func AllowOriginFunc(r *http.Request, origin string) bool {
 		return true
 	}
 	return false
+}
+
+func getFromS3(w http.ResponseWriter, r *http.Request) {
+	utils.Log.Println("url", r.URL)
+	imgName := chi.URLParam(r, "imgName")
+	if imgName == "" {
+		http.Error(w, "Invalid image name", http.StatusForbidden)
+		return
+	}
+
+	imgResult, errString, errStatCode := s3Media.GetS3Img(imgName)
+	if errStatCode != 0 {
+		http.Error(w, errString, errStatCode)
+		return
+	}
+	defer imgResult.Body.Close()
+	for true {
+
+	}
+}
+
+func uploadS3(w http.ResponseWriter, r *http.Request) {
+	reader, err := r.MultipartReader()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	formField1, err := reader.NextPart()
+	if err != nil && err != io.EOF {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	} else if formField1.FormName() != "TestFile" {
+		http.Error(w, "A file is expected", http.StatusBadRequest)
+		return
+	}
+
+	buf := bufio.NewReader(formField1)
+	sniff, _ := buf.Peek(512)
+	fileType := mimetype.Detect(sniff)
+	fileName := utils.RandFileName(fileType)
+	utils.Log.Println(fileName)
+	// return
+
+	err = s3Media.S3UploadImage(formField1, fileName)
+	if err != nil {
+		utils.Log.Println("Err test uploading to s3", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func uploadHandler(res http.ResponseWriter, req *http.Request) {

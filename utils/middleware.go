@@ -14,16 +14,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Missing access token", http.StatusUnauthorized)
 			return
 		}
-		// bearer := r.Header.Get("Authorization")
-		// if bearer == "" {
-		// 	http.Error(w, "Missing token", http.StatusUnauthorized)
-		// 	return
-		// }
-		// unverifiedToken := strings.Split(bearer, "Bearer ")[1]
-		// if unverifiedToken == "" {
-		// 	http.Error(w, "Missing token", http.StatusBadRequest)
-		// 	return
-		// }
+
 		mapClaims, err, statusCode := VerifyUserToken(accessToken.Value)
 		if err != nil {
 			http.Error(w, err.Error(), statusCode)
@@ -34,7 +25,6 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		exists, err := db.UserExistsById(int64(mapClaims["UserId"].(float64)))
 		if err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			// fmt.Println(err)
 			Log.Println("midwre error: checking user existence", err)
 			return
 		} else if !exists {

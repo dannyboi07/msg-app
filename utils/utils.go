@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	stdlog "log"
+	"math/rand"
 	"mime/multipart"
 	"msg-app/backend/types"
 	"net/http"
@@ -180,6 +181,19 @@ func ReadPartToString(multiPart *multipart.Part) string {
 	// return buf.String(), nil
 }
 
+const alphaForRand = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func RandFileName(ext *mimetype.MIME) string {
+	timeNow := strconv.FormatInt(time.Now().Unix(), 10)
+	b := make([]byte, 50)
+	for i := range b {
+		// Log.Println("rand", rand.Int63(), "index pre", int64(len(alphaForRand)), "index val", rand.Int63()%int64(len(alphaForRand)))
+		b[i] = alphaForRand[rand.Int63()%int64(len(alphaForRand))]
+	}
+
+	return timeNow + "-" + string(b) + ext.Extension()
+}
+
 func FileUpload(file *multipart.Part, buf *bufio.Reader, dir string, ext *mimetype.MIME, maxFileSize int64) (int, error, string) {
 	timeNow := time.Now().Format("2006-01-02-15-04-05")
 	// fileLink := "http://localhost:8080/" + dir + timeNow + "-*" + ext.Extension()
@@ -188,6 +202,7 @@ func FileUpload(file *multipart.Part, buf *bufio.Reader, dir string, ext *mimety
 		return http.StatusInternalServerError, err, ""
 	}
 	defer tempFile.Close()
+
 	lmt := io.MultiReader(buf, io.LimitReader(file, maxFileSize-511))
 	written, err := io.Copy(tempFile, lmt)
 	if err != nil && err != io.EOF {
@@ -200,6 +215,7 @@ func FileUpload(file *multipart.Part, buf *bufio.Reader, dir string, ext *mimety
 		os.Remove(tempFile.Name())
 		return http.StatusRequestEntityTooLarge, err, ""
 	}
+
 	return 0, nil, "http://localhost:8080/" + tempFile.Name()
 }
 
