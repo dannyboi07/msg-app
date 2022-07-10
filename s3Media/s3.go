@@ -1,8 +1,7 @@
 package s3Media
 
 import (
-	"fmt"
-	"mime/multipart"
+	"io"
 	"msg-app/backend/utils"
 	"net/http"
 	"os"
@@ -36,30 +35,26 @@ func InitS3() {
 		Region:      aws.String(os.Getenv("AWS_REGION")),
 		Credentials: credentials.NewStaticCredentials(*aws.String(os.Getenv("AWS_ACCESS_KEY_ID")), *aws.String(os.Getenv("AWS_SECRET_KEY")), ""),
 	}))
-	getObjSess = s3.New(session.New())
+	getObjSess = s3.New(sess)
 	uploader = s3manager.NewUploader(sess)
 }
 
-func S3UploadImage(fileBody *multipart.Part, key string) error {
+func S3UploadImage(fileBody *io.Reader, key string, contentType string) error {
 
 	utils.Log.Println("key", key, "filebody", fileBody, "filebody map", fileBody)
-	result, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: &bucket,
-		Key:    aws.String(key),
-		Body:   fileBody,
-	}) // 1657312400-oJnNPGsiuzytMOJPatwtPilfsfykSBGplhxtxVSGpqaJaBRgAv.png
-	// if err != nil {
-	// 	utils.Log.Println("error uploading profimg to s3")
-	// 	return err
-	// }
-	fmt.Println("s3 result", result)
+	_, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket:      &bucket,
+		Key:         &key,
+		Body:        *fileBody,
+		ContentType: &contentType,
+	})
 	return err
 }
 
 func GetS3Img(key string) (*s3.GetObjectOutput, string, int) {
 	input := &s3.GetObjectInput{
 		Bucket: &bucket,
-		Key:    aws.String(key),
+		Key:    &key,
 	}
 
 	result, err := getObjSess.GetObject(input)
@@ -77,10 +72,6 @@ func GetS3Img(key string) (*s3.GetObjectOutput, string, int) {
 				return nil, "Interval server error", http.StatusInternalServerError
 			}
 		}
-	} else {
-		utils.Log.Println(err)
-		return nil, "Interval server error", http.StatusInternalServerError
 	}
-	utils.Log.Println("result", result)
 	return result, "", 0
 }

@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"msg-app/backend/db"
 	"msg-app/backend/redis"
 	"msg-app/backend/types"
@@ -11,7 +13,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -23,15 +27,21 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reader, err := r.MultipartReader()
+	var (
+		reader *multipart.Reader
+		err    error
+	)
+	reader, err = r.MultipartReader()
 	if err != nil {
 		http.Error(w, "Interval Server Error", http.StatusInternalServerError)
 		utils.Log.Println("cntrl error: initing multipart reader", err)
-		// fmt.Println(err.Error())
 		return
 	}
 
-	nameField, err := reader.NextPart()
+	// Section: Validate name
+	var nameField *multipart.Part
+
+	nameField, err = reader.NextPart()
 	if err != nil && err != io.EOF {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		utils.Log.Println("client error: nextPart:nameField", err, r.RemoteAddr)
@@ -41,13 +51,16 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		utils.Log.Println("client error: 'name' field name not found", r.RemoteAddr)
 		return
 	}
-	name := utils.ReadPartToString(nameField)
+
+	var name string = utils.ReadPartToString(nameField)
 	if !utils.ValidName(&name) {
 		http.Error(w, "Invalid name, must be greater than 3 and consist of only alphabetic characters", http.StatusBadRequest)
 		return
 	}
 
-	emailPart, err := reader.NextPart()
+	// Section: Validate email
+	var emailPart *multipart.Part
+	emailPart, err = reader.NextPart()
 	if err != nil && err != io.EOF {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		utils.Log.Println("client error: nextPart:emailField", err, r.RemoteAddr)
@@ -57,20 +70,25 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		utils.Log.Println("client error: 'email' field name not found", r.RemoteAddr)
 		return
 	}
-	email := utils.ReadPartToString(emailPart)
-	userExists, err := db.UserExists(&email)
+
+	var email string = utils.ReadPartToString(emailPart)
+	var userExists bool
+	userExists, err = db.UserExists(&email)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		// fmt.Println(err.Error())
 		utils.Log.Println("cntrl error: getting user details from db", err)
 		return
 	}
+
 	if userExists {
 		http.Error(w, "User already exists, try \"Forgot Password\" if you've forgotten your password to recover", http.StatusConflict)
 		return
 	}
 
-	passwordField, err := reader.NextPart()
+	// Section: Validate password
+	var passwordField *multipart.Part
+
+	passwordField, err = reader.NextPart()
 	if err != nil && err != io.EOF {
 		http.Error(w, "Expected missing field: password", http.StatusBadRequest)
 		utils.Log.Println("client error: nextPart:password", err, r.RemoteAddr)
@@ -80,22 +98,27 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		utils.Log.Println("client error: 'password' field name not found", r.RemoteAddr)
 		return
 	}
-	password := utils.ReadPartToString(passwordField)
 
-	profilePic, err := reader.NextPart()
+	var password string = utils.ReadPartToString(passwordField)
+
+	// Section: Validate profile picture
+	var profilePic *multipart.Part
+
+	profilePic, err = reader.NextPart()
 	if err != nil && err != io.EOF {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		utils.Log.Println("cntrl error: ", err)
 		return
 	} else if err == io.EOF {
-		hashedPw, err := utils.HashPassword(password, 10)
+		var hashedPw string
+		hashedPw, err = utils.HashPassword(password, 10)
 		if err != nil {
 			http.Error(w, "Interval Server Error", http.StatusInternalServerError)
-			// fmt.Println(err)
 			utils.Log.Println("cntrl error: hashing password", err)
 			return
 		}
-		picStr := ""
+
+		var picStr string = ""
 		var user types.User = types.User{Name: &name, Email: &email, Profile_Pic: &picStr, Password: &hashedPw}
 		err = db.InsertUser(&user)
 		if err != nil {
@@ -103,29 +126,42 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			utils.Log.Println("cntrl error: Inserting user in db", err)
 			return
 		}
+
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(user)
 	} else if err != io.EOF {
-		validFile, buf, fileExt := utils.ValidFileType(profilePic, &utils.ProfImgValRegEx)
+		var (
+			validFile bool
+			buf       *bufio.Reader
+			fileExt   *mimetype.MIME
+		)
+		validFile, buf, fileExt = utils.ValidFileType(profilePic, &utils.ProfImgValRegEx)
 		if !validFile {
 			http.Error(w, "Unacceptable file type", http.StatusUnprocessableEntity)
 			utils.Log.Println("client error: 'Invalid prof-pic file type'", r.RemoteAddr)
 			return
 		}
-		statusInt, err, fileLink := utils.FileUpload(profilePic, buf, "static/public/profile-pics/", fileExt, maxFileSize)
+
+		var (
+			statusInt int
+			err       error
+			fileLink  string
+		)
+		statusInt, err, fileLink = utils.FileUpload(profilePic, buf, "static/public/profile-pics/", fileExt, maxFileSize)
 		if err != nil {
 			http.Error(w, err.Error(), statusInt)
 			utils.Log.Println("cntrl/client error: prof-pic upload", err)
 			return
 		}
 
-		hashedPw, err := utils.HashPassword(password, 10)
+		var hashedPw string
+		hashedPw, err = utils.HashPassword(password, 10)
 		if err != nil {
 			http.Error(w, "Interval Server Error", http.StatusInternalServerError)
-			// fmt.Println(err)
 			utils.Log.Println("cntrl error: hashing password", err)
 			return
 		}
+
 		var user types.User = types.User{Name: &name, Email: &email, Profile_Pic: &fileLink, Password: &hashedPw}
 		err = db.InsertUser(&user)
 		if err != nil {
@@ -145,10 +181,17 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		utils.Log.Println("client error: invalid content type", r.RemoteAddr)
 		return
 	}
+
 	jDec := json.NewDecoder(r.Body)
 	jDec.DisallowUnknownFields()
-	var userLogin types.UserLoginInput
-	statusCode, err := utils.JsonReqErrCheck(jDec.Decode(&userLogin))
+
+	// Validate JSON containing user details
+	var (
+		userLogin  types.UserLoginInput
+		statusCode int
+		err        error
+	)
+	statusCode, err = utils.JsonReqErrCheck(jDec.Decode(&userLogin))
 	if err != nil {
 		http.Error(w, err.Error(), statusCode)
 		utils.Log.Println("cntrl/client error: ", err)
@@ -164,7 +207,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.GetUser(*userLogin.Email)
+	// Get users's deets from DB by email
+	var user types.UserWithId
+	user, err = db.GetUser(*userLogin.Email)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
 			http.Error(w, "User doesn't exist", http.StatusNotFound)
@@ -172,24 +217,35 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Error(w, "Internal Server Error", http.StatusBadRequest)
 		utils.Log.Println("cntrl error: getting user from db", err)
-		// fmt.Println(err.Error())
 		return
 	}
-	trueUser := utils.AuthPassword(*user.Password, *userLogin.Password)
+
+	// Validate password
+	var trueUser bool = utils.AuthPassword(*user.Password, *userLogin.Password)
 	if !trueUser {
 		http.Error(w, "Incorrect password", http.StatusUnauthorized)
 		return
 	}
 	fmt.Println("name", *user.Name, "email", *user.Email, "id", *user.UserId, "userprof", *user.Profile_Pic)
 
+	// Create struct for user's token
 	userForToken := types.UserForToken{UserId: *user.UserId, Email: *user.Email}
-	accToken, accTkExp, err := utils.CreateJwt(userForToken)
+	var (
+		accToken string
+		accTkExp int
+	)
+	accToken, accTkExp, err = utils.CreateJwt(userForToken)
 	if err != nil {
 		http.Error(w, "Internal Server Error, try again", http.StatusInternalServerError)
 		utils.Log.Println("cntrl error: creating jwt", err)
 		return
 	}
-	refToken, refTkExp, err := utils.CreateRefreshJwt(userForToken)
+
+	var (
+		refToken string
+		refTkExp time.Duration
+	)
+	refToken, refTkExp, err = utils.CreateRefreshJwt(userForToken)
 	if err != nil {
 		http.Error(w, "Interval Server Error, try again", http.StatusInternalServerError)
 		utils.Log.Println("cntrl err: creating ref tk", err)
@@ -217,7 +273,12 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func LogoutUser(w http.ResponseWriter, r *http.Request) {
-	accTkCookie, err := r.Cookie("accessToken")
+
+	var (
+		accTkCookie *http.Cookie
+		err         error
+	)
+	accTkCookie, err = r.Cookie("accessToken")
 
 	if err == nil {
 		// http.Error(w, "Missing access token", http.StatusForbidden)
@@ -227,12 +288,12 @@ func LogoutUser(w http.ResponseWriter, r *http.Request) {
 		accTkCookie.Path = "/api"
 		http.SetCookie(w, accTkCookie)
 	}
-	refTkCookie, err := r.Cookie("refreshToken")
-	if err == nil {
-		// http.Error(w, "Missing refresh token", http.StatusForbidden)
-		// utils.Log.Println("cntrl err: getting refTk cookie", err, r.RemoteAddr)
-		// return
 
+	var refTkCookie *http.Cookie
+	refTkCookie, err = r.Cookie("refreshToken")
+	if err == nil {
+
+		var mapClaims jwt.MapClaims
 		mapClaims, err, _ := utils.VerifyUserToken(refTkCookie.Value)
 		if err == nil || err != nil && err.Error() == "Token expired" {
 			redis.DelRefToken(strconv.Itoa(int(mapClaims["UserId"].(float64))) + "-" + "refTk")

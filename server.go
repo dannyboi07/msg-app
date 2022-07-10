@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"regexp"
 	"sync"
@@ -72,6 +73,7 @@ func main() {
 		utils.Log.Fatal("Error loading env vars")
 	}
 
+	rand.Seed(time.Now().Unix())
 	s3Media.InitS3()
 
 	// privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -248,7 +250,7 @@ func main() {
 	r.Post("/uploads3", uploadS3)
 	r.Get("/gets3/{imgName}", getFromS3)
 
-	if err := http.ListenAndServe(":8080", r); err != nil {
+	if err := http.ListenAndServe("localhost:8080", r); err != nil {
 		log.Fatal("Error starting server: ", err.Error())
 	}
 	// if err := http.ListenAndServeTLS(":8080", "public.pem", "private.pem", r); err != nil {
@@ -290,10 +292,49 @@ func getFromS3(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errString, errStatCode)
 		return
 	}
+	utils.Log.Println("imgResult", imgResult)
 	defer imgResult.Body.Close()
-	for true {
 
+	w.Header().Set("Content-Type", *imgResult.ContentType)
+	// w.Header().Set("Content-Length", strconv.FormatInt(*imgResult.ContentLength, 10))
+	// _, err := io.Copy(w, imgResult.Body)
+	// if err != nil {
+	// 	utils.Log.Println("ioCopy", err)
+	// }
+	// w.Write(imgResult.Body)
+	// var tempBuf []byte = []byte{}
+	// 	var tempBuf []byte = make([]byte, int(*imgResult.ContentLength))
+	// forLoop:
+	// 	for {
+	// 		n, err := imgResult.Body.Read(tempBuf)
+	// 		if err != nil {
+	// 			if err != io.EOF {
+	// 				utils.Log.Println("err reading imgResult body", err)
+	// 				http.Error(w, "Interval Server Error", http.StatusInternalServerError)
+	// 				return
+	// 			} else if err == io.EOF {
+	// 				break forLoop
+	// 			}
+	// 		}
+	// 		utils.Log.Println("writing", n)
+	// 		w.Write(tempBuf)
+	// 	}
+
+	// body, err := ioutil.ReadAll(imgResult.Body)
+	// if err != nil && err != io.EOF {
+	// 	utils.Log.Println("imgResBody read err", err)
+	// 	http.Error(w, "Internal server error", http.StatusInternalServerError)
+	// 	return
+	// }
+	// w.Write(body)
+
+	n, err := io.Copy(w, imgResult.Body)
+	if err != nil {
+		utils.Log.Println("imgResBody read err", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
 	}
+	utils.Log.Println("closed imgresBody", n, err, w)
 }
 
 func uploadS3(w http.ResponseWriter, r *http.Request) {
@@ -318,7 +359,8 @@ func uploadS3(w http.ResponseWriter, r *http.Request) {
 	utils.Log.Println(fileName)
 	// return
 
-	err = s3Media.S3UploadImage(formField1, fileName)
+	fileToUpload := io.MultiReader(buf, formField1)
+	err = s3Media.S3UploadImage(&fileToUpload, fileName, fileType.String())
 	if err != nil {
 		utils.Log.Println("Err test uploading to s3", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

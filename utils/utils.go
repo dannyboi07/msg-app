@@ -107,17 +107,17 @@ func JsonReqErrCheck(err error) (int, error) {
 
 		switch {
 		case errors.As(err, &syntaxError):
-			return http.StatusBadRequest, errors.New(fmt.Sprintf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset))
+			return http.StatusBadRequest, fmt.Errorf("Request body contains badly-formed JSON (at position %d)", syntaxError.Offset)
 
 		case errors.Is(err, io.ErrUnexpectedEOF):
-			return http.StatusBadRequest, errors.New(fmt.Sprintf("Request body contains badly formed JSON"))
+			return http.StatusBadRequest, fmt.Errorf("Request body contains badly formed JSON")
 
 		case errors.As(err, &unMarshallTypeError):
-			return http.StatusBadRequest, errors.New(fmt.Sprintf("Request body contains an invalid value for field: %q (at position: %d)", unMarshallTypeError.Field, unMarshallTypeError.Offset))
+			return http.StatusBadRequest, fmt.Errorf("Request body contains an invalid value for field: %q (at position: %d)", unMarshallTypeError.Field, unMarshallTypeError.Offset)
 
 		case strings.HasPrefix(err.Error(), "json: unknown field "):
 			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-			return http.StatusBadRequest, errors.New(fmt.Sprintf("Request body contains unknown field %s", fieldName))
+			return http.StatusBadRequest, fmt.Errorf("Request body contains unknown field %s", fieldName)
 
 		case errors.Is(err, io.EOF):
 			return http.StatusBadRequest, errors.New("Request body cannot be empty")
@@ -185,6 +185,7 @@ const alphaForRand = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func RandFileName(ext *mimetype.MIME) string {
 	timeNow := strconv.FormatInt(time.Now().Unix(), 10)
+
 	b := make([]byte, 50)
 	for i := range b {
 		// Log.Println("rand", rand.Int63(), "index pre", int64(len(alphaForRand)), "index val", rand.Int63()%int64(len(alphaForRand)))
@@ -229,10 +230,7 @@ func HashPassword(password string, cost int) (string, error) {
 
 func AuthPassword(hashedPassword string, password string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 type CustomClaims struct {
