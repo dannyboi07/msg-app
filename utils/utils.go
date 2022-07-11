@@ -12,6 +12,7 @@ import (
 	stdlog "log"
 	"math/rand"
 	"mime/multipart"
+	"msg-app/backend/s3Media"
 	"msg-app/backend/types"
 	"net/http"
 	"os"
@@ -30,10 +31,6 @@ import (
 
 var Log stdlog.Logger
 
-// var LogErr stdlog.Logger
-
-// var LogFatal stdlog.Logger
-
 var ProfImgValRegEx regexp.Regexp = *regexp.MustCompile("^image/jpg|jpeg|png|heif|heic|gif$")
 var NameValRegEx regexp.Regexp = *regexp.MustCompile(`^[\p{L}\p{M} .'-]+$`)
 var EmailValRegEx regexp.Regexp = *regexp.MustCompile("[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?.)+(?:[A-Z]{2}|com|org|net|gov|mil|biz|info|mobi|name|aero|jobs|museum)\b")
@@ -42,7 +39,6 @@ var PubKey *rsa.PublicKey
 
 func InitLogger() {
 	Log = *stdlog.New(os.Stdout, "Log: ", stdlog.Lshortfile|stdlog.LUTC)
-	// LogErr = *stdlog.New(os.Stderr, "logErr: ", stdlog.Lshortfile|stdlog.LUTC)
 }
 
 func ValidName(name *string) bool {
@@ -56,7 +52,6 @@ func ValidName(name *string) bool {
 
 func DecodeJsonBody(w http.ResponseWriter, r *http.Request, dataType interface{}) (error, int) {
 	if r.Header.Get("Content-Type") != "application/json" {
-		// http.Error(w, "Only JSON requests accepted", http.StatusBadRequest)
 		return errors.New("Only JSON requests accepted"), http.StatusBadRequest
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 1000000)
@@ -183,7 +178,7 @@ func ReadPartToString(multiPart *multipart.Part) string {
 
 const alphaForRand = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func RandFileName(ext *mimetype.MIME) string {
+func RandFileName(ext string) string {
 	timeNow := strconv.FormatInt(time.Now().Unix(), 10)
 
 	b := make([]byte, 50)
@@ -192,12 +187,12 @@ func RandFileName(ext *mimetype.MIME) string {
 		b[i] = alphaForRand[rand.Int63()%int64(len(alphaForRand))]
 	}
 
-	return timeNow + "-" + string(b) + ext.Extension()
+	return timeNow + "-" + string(b) + ext
 }
 
 func FileUpload(file *multipart.Part, buf *bufio.Reader, dir string, ext *mimetype.MIME, maxFileSize int64) (int, error, string) {
+
 	timeNow := time.Now().Format("2006-01-02-15-04-05")
-	// fileLink := "http://localhost:8080/" + dir + timeNow + "-*" + ext.Extension()
 	tempFile, err := ioutil.TempFile(dir, timeNow+"-*"+ext.Extension())
 	if err != nil {
 		return http.StatusInternalServerError, err, ""
@@ -218,6 +213,39 @@ func FileUpload(file *multipart.Part, buf *bufio.Reader, dir string, ext *mimety
 	}
 
 	return 0, nil, "http://localhost:8080/" + tempFile.Name()
+}
+
+func S3FileUpload(buf *bufio.Reader, file *multipart.Part, s3Dir string, fileMime *mimetype.MIME, maxFileSize int64) (string, int) {
+	var fileName string = RandFileName(fileMime.Extension())
+	var fileToUpload io.Reader = io.MultiReader(buf, file)
+
+	var (
+		fileBuffer      []byte = []byte{}
+		buff                   = make([]byte, 4096)
+		totalSize, size int
+		err             error
+	)
+	for {
+		size, err = fileToUpload.Read(buff)
+		totalSize += size
+		fileBuffer = append(fileBuffer, buff[:size]...)
+
+		if totalSize > int(maxFileSize) {
+			return "", http.StatusRequestEntityTooLarge
+
+		} else if err == io.EOF && totalSize <= int(maxFileSize) {
+			break
+
+		} else if err != nil {
+			return "", http.StatusInternalServerError
+		}
+	}
+	err = s3Media.S3UploadImage(bytes.NewReader(fileBuffer), s3Dir+fileName, fileMime.String())
+	if err != nil {
+		Log.Println("err uploading to s3", err)
+		return "", http.StatusInternalServerError
+	}
+	return "http://localhost:8080/gets3/" + s3Dir + fileName, 0
 }
 
 func HashPassword(password string, cost int) (string, error) {

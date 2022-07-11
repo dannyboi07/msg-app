@@ -90,15 +90,14 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	passwordField, err = reader.NextPart()
 	if err != nil && err != io.EOF {
-		http.Error(w, "Expected missing field: password", http.StatusBadRequest)
+		http.Error(w, "Missing field: password", http.StatusBadRequest)
 		utils.Log.Println("client error: nextPart:password", err, r.RemoteAddr)
 		return
 	} else if passwordField.FormName() != "password" {
-		http.Error(w, "Expected missing field: password", http.StatusBadRequest)
+		http.Error(w, "Missing field: password", http.StatusBadRequest)
 		utils.Log.Println("client error: 'password' field name not found", r.RemoteAddr)
 		return
 	}
-
 	var password string = utils.ReadPartToString(passwordField)
 
 	// Section: Validate profile picture
@@ -133,9 +132,9 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 		var (
 			validFile bool
 			buf       *bufio.Reader
-			fileExt   *mimetype.MIME
+			fileMime  *mimetype.MIME
 		)
-		validFile, buf, fileExt = utils.ValidFileType(profilePic, &utils.ProfImgValRegEx)
+		validFile, buf, fileMime = utils.ValidFileType(profilePic, &utils.ProfImgValRegEx)
 		if !validFile {
 			http.Error(w, "Unacceptable file type", http.StatusUnprocessableEntity)
 			utils.Log.Println("client error: 'Invalid prof-pic file type'", r.RemoteAddr)
@@ -147,10 +146,17 @@ func RegisterUser(w http.ResponseWriter, r *http.Request) {
 			err       error
 			fileLink  string
 		)
-		statusInt, err, fileLink = utils.FileUpload(profilePic, buf, "static/public/profile-pics/", fileExt, maxFileSize)
-		if err != nil {
-			http.Error(w, err.Error(), statusInt)
-			utils.Log.Println("cntrl/client error: prof-pic upload", err)
+		fileLink, statusInt = utils.S3FileUpload(buf, profilePic, "profile-images/", fileMime, maxFileSize)
+		switch statusInt {
+		case 0:
+			break
+		case 413:
+			http.Error(w, "Profile picture is too large, max size of 2MB", statusInt)
+			utils.Log.Println("client err: Profile picture over file size limit", r.RemoteAddr)
+			return
+		case 500:
+			http.Error(w, "Internal server error", statusInt)
+			utils.Log.Println("cntrl err:", r.RemoteAddr)
 			return
 		}
 
@@ -252,6 +258,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// SET refresh token in Redis with EXPIRY (7 days)
 	err = redis.SetRefToken(strconv.Itoa(int(*user.UserId))+"-"+"refTk", refToken, refTkExp)
 	if err != nil {
 		http.Error(w, "Internal Server Error, try again", http.StatusInternalServerError)
@@ -259,16 +266,16 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.Log.Println(refTkExp, refTkExp, accTkExp)
-	accTkCookie := &http.Cookie{Name: "accessToken", Value: accToken, MaxAge: accTkExp, Path: "/api", HttpOnly: true}
-	refTkCookie := &http.Cookie{Name: "refreshToken", Value: refToken, MaxAge: int(refTkExp.Seconds()), Path: "/api/auth", HttpOnly: true}
-	w.Header().Set("Content-Type", "application/json")
+	var (
+		accTkCookie *http.Cookie
+		refTkCookie *http.Cookie
+	)
+	accTkCookie = &http.Cookie{Name: "accessToken", Value: accToken, MaxAge: accTkExp, Path: "/api", HttpOnly: true}
+	refTkCookie = &http.Cookie{Name: "refreshToken", Value: refToken, MaxAge: int(refTkExp.Seconds()), Path: "/api/auth", HttpOnly: true}
 	http.SetCookie(w, accTkCookie)
 	http.SetCookie(w, refTkCookie)
 
-	// userDetails := types.UserLogin{UserId: user.UserId, User: user.User, AccTokenExp: int64(accTkExp), RefTokenExp: int64(expTime.Seconds())}
-	// user.AccTokenExp = accTkExp
-	// user.RefTokenExp = refTkExp
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
 
@@ -280,10 +287,8 @@ func LogoutUser(w http.ResponseWriter, r *http.Request) {
 	)
 	accTkCookie, err = r.Cookie("accessToken")
 
+	// If access token cookie didn't expire by MAX AGE, access it and mark it for deletion
 	if err == nil {
-		// http.Error(w, "Missing access token", http.StatusForbidden)
-		// utils.Log.Println("cntrl err: getting accTk cookie", err, r.RemoteAddr)
-		// return
 		accTkCookie.MaxAge = -1
 		accTkCookie.Path = "/api"
 		http.SetCookie(w, accTkCookie)
@@ -292,7 +297,6 @@ func LogoutUser(w http.ResponseWriter, r *http.Request) {
 	var refTkCookie *http.Cookie
 	refTkCookie, err = r.Cookie("refreshToken")
 	if err == nil {
-
 		var mapClaims jwt.MapClaims
 		mapClaims, err, _ := utils.VerifyUserToken(refTkCookie.Value)
 		if err == nil || err != nil && err.Error() == "Token expired" {
@@ -315,9 +319,14 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 		utils.Log.Println("client error: invalid content type", r.RemoteAddr)
 		return
 	}
-	userId := r.Context().Value("userDetails").(jwt.MapClaims)["UserId"].(int64)
 
-	user, err := db.GetUserById(userId)
+	var userId int64 = r.Context().Value("userDetails").(jwt.MapClaims)["UserId"].(int64)
+
+	var (
+		user types.UserWithId
+		err  error
+	)
+	user, err = db.GetUserById(userId)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
 			http.Error(w, "User doesn't exist", http.StatusNotFound)
@@ -330,8 +339,12 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	jDec := json.NewDecoder(r.Body)
 	jDec.DisallowUnknownFields()
-	var userChangePw types.UserChangePwInput
-	statusCode, err := utils.JsonReqErrCheck(jDec.Decode(&userChangePw))
+
+	var (
+		userChangePw types.UserChangePwInput
+		statusCode   int
+	)
+	statusCode, err = utils.JsonReqErrCheck(jDec.Decode(&userChangePw))
 	if err != nil {
 		http.Error(w, err.Error(), statusCode)
 		utils.Log.Println("cntrl/client error: ", err)
@@ -345,25 +358,26 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	// 	http.Error(w, "Email doesn't match", http.StatusUnauthorized)
 	// 	return
 	if userChangePw.OldPassword == nil {
-		http.Error(w, "Old password field is empty", http.StatusBadRequest)
+		http.Error(w, "Old password is required", http.StatusBadRequest)
 		return
 	} else if !utils.AuthPassword(*user.Password, *userChangePw.OldPassword) {
-		http.Error(w, "Old password doesn't match", http.StatusUnauthorized)
-		utils.Log.Println("client error: Old password doesn't match", r.RemoteAddr)
+		http.Error(w, "Wrong Password", http.StatusUnauthorized)
+		utils.Log.Println("client error: Wrong Password", r.RemoteAddr)
 		return
 	} else if userChangePw.NewPassword == nil {
 		http.Error(w, "New password field is empty", http.StatusBadRequest)
 		utils.Log.Println("client error: Missing new password field", r.RemoteAddr)
 		return
 	} else if *userChangePw.NewPassword == *userChangePw.OldPassword {
-		http.Error(w, "New password is same as old password", http.StatusBadRequest)
+		http.Error(w, "New password is the same as old password", http.StatusBadRequest)
 		return
 	} else if utils.AuthPassword(*user.Password, *userChangePw.NewPassword) {
-		http.Error(w, "New password is same as old password", http.StatusBadRequest)
+		http.Error(w, "New password is the same as old password", http.StatusBadRequest)
 		return
 	}
 
-	userNewPwHash, err := utils.HashPassword(*userChangePw.NewPassword, 10)
+	var userNewPwHash string
+	userNewPwHash, err = utils.HashPassword(*userChangePw.NewPassword, 10)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusBadRequest)
 		utils.Log.Println("cntrl error: hashing new password", err)
@@ -379,6 +393,80 @@ func ChangePassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func ChangeDP(w http.ResponseWriter, r *http.Request) {
+	var maxFileSize int = 2000000
+	r.Body = http.MaxBytesReader(w, r.Body, int64(maxFileSize))
+
+	var (
+		reader *multipart.Reader
+		err    error
+	)
+	reader, err = r.MultipartReader()
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		utils.Log.Println("cntrl err: ", err)
+		return
+	}
+
+	var profilePic *multipart.Part
+	profilePic, err = reader.NextPart()
+	if err != nil {
+		if err != io.EOF {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			utils.Log.Println("cntrl err", err)
+			return
+		}
+		http.Error(w, "Profile picture not present", http.StatusBadRequest)
+		utils.Log.Println("client err: Missing profile picture")
+		return
+
+	} else if profilePic.FormName() != "profilePic" {
+		http.Error(w, "Unrecognized form field", http.StatusBadRequest)
+		utils.Log.Println("client err: Unrecognized form field")
+		return
+	}
+
+	var (
+		validFile bool
+		buf       *bufio.Reader
+		fileType  *mimetype.MIME
+	)
+	validFile, buf, fileType = utils.ValidFileType(profilePic, &utils.ProfImgValRegEx)
+	if !validFile {
+		http.Error(w, "Unacceptable file type", http.StatusUnprocessableEntity)
+		utils.Log.Println("client error: 'Invalid prof-pic file type'", r.RemoteAddr)
+		return
+	}
+
+	var (
+		fileLink  string
+		statusInt int
+	)
+	fileLink, statusInt = utils.S3FileUpload(buf, profilePic, "profile-images/", fileType, int64(maxFileSize))
+	switch statusInt {
+	case 0:
+		break
+	case 413:
+		http.Error(w, "Profile picture is too large, max size of 2MB", statusInt)
+		utils.Log.Println("cntrl err: Uploading prof img to s3")
+		return
+	case 500:
+		http.Error(w, "Internal server error", statusInt)
+		utils.Log.Println("cntrl err: uploading changed profile picture to s3")
+		return
+	}
+
+	var userId int64 = r.Context().Value("userDetails").(jwt.MapClaims)["UserId"].(int64)
+	err = db.UpdateUserDP(userId, fileLink)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		utils.Log.Println("db err: ", err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(types.UserProfileLink{ProfileImgLink: fileLink})
+}
+
 func SearchUser(w http.ResponseWriter, r *http.Request) {
 	var userEmail string
 	if userEmail = r.URL.Query().Get("email"); userEmail == "" {
@@ -387,9 +475,13 @@ func SearchUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId := r.Context().Value("userDetails").(jwt.MapClaims)["UserId"].(int64)
+	var userId int64 = r.Context().Value("userDetails").(jwt.MapClaims)["UserId"].(int64)
 
-	user, err := db.GetUser(userEmail)
+	var (
+		user types.UserWithId
+		err  error
+	)
+	user, err = db.GetUser(userEmail)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
 			http.Error(w, "User doesn't exist", http.StatusNotFound)
@@ -399,20 +491,26 @@ func SearchUser(w http.ResponseWriter, r *http.Request) {
 		utils.Log.Println("cntrl error: getting user from db", err)
 		return
 	}
-	isContact := db.ContactExists(userId, *user.UserId)
+
+	var isContact bool = db.ContactExists(userId, *user.UserId)
 	result := types.ContactSearch{UserId: *user.UserId, Name: *user.Name, Profile_Pic: *user.Profile_Pic, IsFriend: isContact}
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
 
 func AddContact(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, 10000)
-	userId := r.Context().Value("userDetails").(jwt.MapClaims)["UserId"].(int64)
+	var userId int64 = r.Context().Value("userDetails").(jwt.MapClaims)["UserId"].(int64)
 
 	jDec := json.NewDecoder(r.Body)
 	jDec.DisallowUnknownFields()
 
-	var contactId types.AddContactId
-	statusCode, err := utils.JsonReqErrCheck(jDec.Decode(&contactId))
+	var (
+		contactId  types.AddContactId
+		statusCode int
+		err        error
+	)
+	statusCode, err = utils.JsonReqErrCheck(jDec.Decode(&contactId))
 
 	if err != nil {
 		http.Error(w, err.Error(), statusCode)
@@ -442,21 +540,32 @@ func AddContact(w http.ResponseWriter, r *http.Request) {
 }
 
 func RefreshAccToken(w http.ResponseWriter, r *http.Request) {
-	refreshToken, err := r.Cookie("refreshToken")
+
+	var (
+		refreshToken *http.Cookie
+		err          error
+	)
+	refreshToken, err = r.Cookie("refreshToken")
 	if err != nil {
 		http.Error(w, "Missing refresh token", http.StatusForbidden)
 		utils.Log.Println("client error: refresh token missing", r.RemoteAddr)
 		return
 	}
 
-	mapClaims, err, statusInt := utils.VerifyUserToken(refreshToken.Value)
+	var (
+		mapClaims jwt.MapClaims
+		statusInt int
+	)
+	mapClaims, err, statusInt = utils.VerifyUserToken(refreshToken.Value)
 	if err != nil {
 		http.Error(w, err.Error(), statusInt)
 		utils.Log.Println("client/server err:", err, r.RemoteAddr)
 		return
 	}
 
-	exists, err := db.UserExistsById(int64(mapClaims["UserId"].(float64)))
+	// Check if user exists
+	var exists bool
+	exists, err = db.UserExistsById(int64(mapClaims["UserId"].(float64)))
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		utils.Log.Println("ref token err: getting user from db", err)
@@ -467,8 +576,9 @@ func RefreshAccToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refTkKey := strconv.FormatInt(int64(mapClaims["UserId"].(float64)), 10) + "-" + "refTk"
-	refTokenExists := redis.RefTokenExists(refTkKey, refreshToken.Value)
+	// Format a keystring for redis
+	var refTkKey string = strconv.FormatInt(int64(mapClaims["UserId"].(float64)), 10) + "-" + "refTk"
+	var refTokenExists bool = redis.RefTokenExists(refTkKey, refreshToken.Value)
 	if !refTokenExists {
 		http.Error(w, "Unauthorized refresh token", http.StatusUnauthorized)
 		utils.Log.Println("client err: refresh token not found", r.RemoteAddr)
@@ -476,7 +586,11 @@ func RefreshAccToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userDetails := types.UserForToken{UserId: int64(mapClaims["UserId"].(float64)), Email: mapClaims["Email"].(string)}
-	newRefToken, refTkExp, err := utils.CreateRefreshJwt(userDetails)
+	var (
+		newRefToken string
+		refTkExp    time.Duration
+	)
+	newRefToken, refTkExp, err = utils.CreateRefreshJwt(userDetails)
 	if err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		utils.Log.Println("server err: creating ref token")
@@ -490,7 +604,11 @@ func RefreshAccToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newAccToken, accTkExp, err := utils.CreateJwt(userDetails)
+	var (
+		newAccToken string
+		accTkExp    int
+	)
+	newAccToken, accTkExp, err = utils.CreateJwt(userDetails)
 	if err != nil {
 		http.Error(w, "Interval Server Error", http.StatusInternalServerError)
 		utils.Log.Println("cntrl err: error creating acc tk", err)
@@ -505,7 +623,4 @@ func RefreshAccToken(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, rekTkCookie)
 
 	w.WriteHeader(http.StatusOK)
-	// w.Header().Set("Content-Type", "application/json")
-	// tokenExps := types.TokenExps{AccTokenExp: accTkExp, RefTokenExp: refTkCreated}
-	// json.NewEncoder(w).Encode(tokenExps)
 }

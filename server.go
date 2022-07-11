@@ -184,10 +184,10 @@ func main() {
 			r.Get("/contacts", controller.GetContacts)
 			r.Get("/status/{id}", controller.GetOnline)
 			r.Get("/ws", ws.Handler)
-			r.Put("/changePw", controller.ChangePassword)
 			r.Get("/searchUser", controller.SearchUser)
 			r.Post("/addContact", controller.AddContact)
-
+			r.Put("/changeDp", controller.ChangeDP)
+			r.Put("/changePw", controller.ChangePassword)
 		})
 
 		r.Group(func(r chi.Router) {
@@ -248,7 +248,7 @@ func main() {
 
 	r.Post("/upload", uploadHandler)
 	r.Post("/uploads3", uploadS3)
-	r.Get("/gets3/{imgName}", getFromS3)
+	r.Get("/gets3/{imgFolder}/{imgName}", getFromS3)
 
 	if err := http.ListenAndServe("localhost:8080", r); err != nil {
 		log.Fatal("Error starting server: ", err.Error())
@@ -280,61 +280,27 @@ func AllowOriginFunc(r *http.Request, origin string) bool {
 }
 
 func getFromS3(w http.ResponseWriter, r *http.Request) {
-	utils.Log.Println("url", r.URL)
-	imgName := chi.URLParam(r, "imgName")
-	if imgName == "" {
-		http.Error(w, "Invalid image name", http.StatusForbidden)
+	var imgFolder string = chi.URLParam(r, "imgFolder")
+	var imgName string = chi.URLParam(r, "imgName")
+	if imgFolder == "" || imgName == "" {
+		http.Error(w, "Invalid media request", http.StatusBadRequest)
 		return
 	}
 
-	imgResult, errString, errStatCode := s3Media.GetS3Img(imgName)
+	imgResult, errString, errStatCode := s3Media.GetS3Img(imgFolder + "/" + imgName)
 	if errStatCode != 0 {
 		http.Error(w, errString, errStatCode)
 		return
 	}
-	utils.Log.Println("imgResult", imgResult)
 	defer imgResult.Body.Close()
 
 	w.Header().Set("Content-Type", *imgResult.ContentType)
-	// w.Header().Set("Content-Length", strconv.FormatInt(*imgResult.ContentLength, 10))
-	// _, err := io.Copy(w, imgResult.Body)
-	// if err != nil {
-	// 	utils.Log.Println("ioCopy", err)
-	// }
-	// w.Write(imgResult.Body)
-	// var tempBuf []byte = []byte{}
-	// 	var tempBuf []byte = make([]byte, int(*imgResult.ContentLength))
-	// forLoop:
-	// 	for {
-	// 		n, err := imgResult.Body.Read(tempBuf)
-	// 		if err != nil {
-	// 			if err != io.EOF {
-	// 				utils.Log.Println("err reading imgResult body", err)
-	// 				http.Error(w, "Interval Server Error", http.StatusInternalServerError)
-	// 				return
-	// 			} else if err == io.EOF {
-	// 				break forLoop
-	// 			}
-	// 		}
-	// 		utils.Log.Println("writing", n)
-	// 		w.Write(tempBuf)
-	// 	}
-
-	// body, err := ioutil.ReadAll(imgResult.Body)
-	// if err != nil && err != io.EOF {
-	// 	utils.Log.Println("imgResBody read err", err)
-	// 	http.Error(w, "Internal server error", http.StatusInternalServerError)
-	// 	return
-	// }
-	// w.Write(body)
-
-	n, err := io.Copy(w, imgResult.Body)
+	_, err := io.Copy(w, imgResult.Body)
 	if err != nil {
 		utils.Log.Println("imgResBody read err", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
-	utils.Log.Println("closed imgresBody", n, err, w)
 }
 
 func uploadS3(w http.ResponseWriter, r *http.Request) {
@@ -355,12 +321,13 @@ func uploadS3(w http.ResponseWriter, r *http.Request) {
 	buf := bufio.NewReader(formField1)
 	sniff, _ := buf.Peek(512)
 	fileType := mimetype.Detect(sniff)
-	fileName := utils.RandFileName(fileType)
+	fileName := utils.RandFileName(fileType.Extension())
 	utils.Log.Println(fileName)
 	// return
 
 	fileToUpload := io.MultiReader(buf, formField1)
-	err = s3Media.S3UploadImage(&fileToUpload, fileName, fileType.String())
+	utils.Log.Println(fileToUpload)
+	// err = s3Media.S3UploadImage(&fileToUpload, fileName, fileType.String())
 	if err != nil {
 		utils.Log.Println("Err test uploading to s3", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

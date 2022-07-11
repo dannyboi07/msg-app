@@ -1,8 +1,8 @@
 package s3Media
 
 import (
+	"fmt"
 	"io"
-	"msg-app/backend/utils"
 	"net/http"
 	"os"
 
@@ -39,13 +39,12 @@ func InitS3() {
 	uploader = s3manager.NewUploader(sess)
 }
 
-func S3UploadImage(fileBody *io.Reader, key string, contentType string) error {
+func S3UploadImage(fileBody io.Reader, key, contentType string) error {
 
-	utils.Log.Println("key", key, "filebody", fileBody, "filebody map", fileBody)
 	_, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket:      &bucket,
 		Key:         &key,
-		Body:        *fileBody,
+		Body:        fileBody,
 		ContentType: &contentType,
 	})
 	return err
@@ -62,13 +61,13 @@ func GetS3Img(key string) (*s3.GetObjectOutput, string, int) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				utils.Log.Println(s3.ErrCodeNoSuchKey, aerr.Error())
+				fmt.Println(s3.ErrCodeNoSuchKey, aerr.Error())
 				return nil, "Image not found", http.StatusNotFound
 			case s3.ErrCodeInvalidObjectState:
-				utils.Log.Println(s3.ErrCodeInvalidObjectState, aerr.Error())
+				fmt.Println(s3.ErrCodeInvalidObjectState, aerr.Error())
 				return nil, "Interval server error", http.StatusInternalServerError
 			default:
-				utils.Log.Println(aerr.Error())
+				fmt.Println(aerr.Error())
 				return nil, "Interval server error", http.StatusInternalServerError
 			}
 		}

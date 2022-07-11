@@ -32,6 +32,10 @@ type UserLogin struct {
 	User
 }
 
+type UserProfileLink struct {
+	ProfileImgLink string `json:"profile_pic"`
+}
+
 type UserLoginInput struct {
 	Email    *string `json:"email"`
 	Password *string `json:"password"`

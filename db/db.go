@@ -16,15 +16,9 @@ import (
 var db *pgxpool.Pool
 var dbContext context.Context
 
-// var dbUname = os.Getenv("DB_UNAME")
-// var dbPwd = os.Getenv("DB_PWD")
-
-// var dbUrl string = os.Getenv("DB_URL") + "/test"
-
 func InitDB() error {
 	dbContext = context.Background()
 	var err error
-	// fmt.Println("dbUrl", dbUrl, "dbUname", dbUname, "dbPwd", dbPwd)
 	db, err = pgxpool.Connect(dbContext, "postgres://"+os.Getenv("DB_UNAME")+":"+os.Getenv("DB_PWD")+"@localhost:5432/"+os.Getenv("DB_NAME"))
 	if err != nil {
 		return err
@@ -104,13 +98,6 @@ func UserExists(userEmail *string) (bool, error) {
 	row := db.QueryRow(dbContext, "SELECT EXISTS(SELECT * FROM users WHERE email = $1)", *userEmail)
 	err := row.Scan(&exists)
 
-	// var ran interface{}
-	// row2 := db.QueryRow(dbContext, "SELECT EXISTS(SELECT * FROM users WHERE email = $1)", *userEmail)
-	// err2 := row2.Scan(ran)
-	// // fmt.Println(ran)
-	// if err2 == nil {
-	// 	fmt.Println(ran, *userEmail)
-	// }
 	if err != nil {
 		return false, err
 	}
@@ -153,7 +140,16 @@ func UpdateUserPw(userId int64, userPw string) error {
 		return err
 	} else if commandTag.RowsAffected() != 1 {
 		return errors.New("Error updating user password at DB")
-		// utils.Log.Println("db error: Error updating user password at DB")
+	}
+	return nil
+}
+
+func UpdateUserDP(userId int64, profImgLink string) error {
+	commandTag, err := db.Exec(dbContext, "UPDATE users SET profile_pic = $1 WHERE user_id = $2", profImgLink, userId)
+	if err != nil {
+		return err
+	} else if commandTag.RowsAffected() != 1 {
+		return errors.New("Error updating user profile image at DB")
 	}
 	return nil
 }
