@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
 	createMsgsChat,
@@ -6,22 +6,26 @@ import {
 	selectExistingCaches,
 } from "../../slices/chatSlice";
 import { updatePendingMsgs } from "../../slices/contactsSlice";
+import { setRefreshFalse, setRefreshTrue } from "../../slices/refreshSlice";
+import { selectToast, setToast } from "../../slices/toastSlice";
 
 function WsMsgHandler({ wsConn, userId }) {
 	const dispatch = useDispatch();
-    const wsConnRetryTimeout = useRef(250);
-	// const [retryWsConn, setRetryWsConn] = useState(true);
+	const wsConnRetryTimeout = useRef(250);
+
 	// Returns an array with the user IDs of contacts which have an active msg cache
 	const existingMsgCaches = useSelector(selectExistingCaches);
-	// const activeContactId = useSelector(selectActiveContact);
 	const msgCachesRef = useRef([]);
 
-    function makeConn() {
-        wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
-        wsConn.current.addEventListener("open", onOpen);
-        wsConn.current.addEventListener("close", closeRetryListener);
-        wsConn.current.addEventListener("message", messageListener);
-    }
+	const toast = useSelector(selectToast);
+	const toastRef = useRef(null);
+
+	function makeConn() {
+		wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
+		wsConn.current.addEventListener("open", onOpen);
+		wsConn.current.addEventListener("close", closeRetryListener);
+		wsConn.current.addEventListener("message", messageListener);
+	}
 
 	function messageListener(e) {
 		const data = JSON.parse(e.data);
@@ -56,51 +60,64 @@ function WsMsgHandler({ wsConn, userId }) {
 	}
 
 	function onOpen() {
-		// setRetryWsConn(false);
-        //console.log("wsConn open", wsConnRetryTimeout.current);
-        wsConnRetryTimeout.current = 250;
-        // console.log(wsConnRetryTimeout.current)
+		if (wsConnRetryTimeout.current > 999) {
+			dispatch(
+				setToast({
+					type: "suc",
+					title: "Reconnected",
+				}),
+			);
+			dispatch(setRefreshFalse());
+		}
+		wsConnRetryTimeout.current = 250;
 	}
 
 	function closeRetryListener() {
-		// setRetryWsConn(true);
-        // wsConn.current.close();
-        wsConn.current = null;
-        console.log(wsConnRetryTimeout.current)
-        setTimeout(() => {
-            makeConn();
-        }, wsConnRetryTimeout.current = wsConnRetryTimeout.current * 2)
-        // wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
-        // console.log(wsConn.current)
+		wsConn.current = null;
+		// Retry connection while backing off exponentially
+		if (
+			wsConnRetryTimeout.current > 999 &&
+			wsConnRetryTimeout.current < 64001 &&
+			(!toastRef.current || toastRef.current.type !== "warn")
+		) {
+			dispatch(
+				setToast({
+					type: "warn",
+					title: "Connection lost",
+					message: "Re-establishing connection",
+				}),
+			);
+            dispatch(setRefreshTrue());
+		}
+
+		if (wsConnRetryTimeout.current < 64001) {
+			setTimeout(() => {
+				makeConn();
+			}, (wsConnRetryTimeout.current = wsConnRetryTimeout.current * 2));
+		}
 	}
 
 	useEffect(() => {
-        // console.log(wsConn.current, retryWsConn)
-        makeConn();
-		// if (retryWsConn) {
-            //console.log("inside if")
-			// wsConn.current = new WebSocket("ws://localhost:8080/api/ws");
-			// wsConn.current.addEventListener("open", onOpen);
-			// wsConn.current.addEventListener("message", messageListener);
-			// wsConn.current.addEventListener("close", closeRetryListener);
-			// wsConn.current.addEventListener("error", closeRetryListener);
-		// }
+		makeConn();
 
 		return () => {
 			console.log("wsConn closing");
-            if (wsConn.current) {
-                wsConn.current.removeEventListener("open", onOpen);
-                wsConn.current.removeEventListener("message", messageListener);
-                wsConn.current.removeEventListener("close", closeRetryListener);
-                // wsConn.current.removeEventListener("error", closeRetryListener);
-                wsConn.current.close(1000);
-            }
+			if (wsConn.current) {
+				wsConn.current.removeEventListener("open", onOpen);
+				wsConn.current.removeEventListener("message", messageListener);
+				wsConn.current.removeEventListener("close", closeRetryListener);
+				wsConn.current.close(1000);
+			}
 		};
 	}, []);
 
 	useEffect(() => {
 		msgCachesRef.current = existingMsgCaches;
 	}, [existingMsgCaches]);
+
+	useEffect(() => {
+		toastRef.current = toast;
+	}, [toast]);
 
 	return <div></div>;
 }

@@ -52,35 +52,33 @@ function ChatProfile({ wsConn }) {
 			}
 		}
 
-		if (wsConn.current) {
-			// wsConn.current.addEventListener("open", () => {
-				wsConn.current.addEventListener(
+		if (wsConn.current && contactDetails) {
+			wsConn.current.addEventListener("message", handleWsStatusListener);
+			wsConn.current.send(
+				JSON.stringify({
+					type: "getstatus",
+					from: userId,
+					to: contactDetails.user_id,
+				}),
+			);
+			wsConn.current.send(
+				JSON.stringify({
+					type: "sub",
+					from: userId,
+					to: contactDetails.user_id,
+				}),
+			);
+		}
+
+		return () => {
+			if (wsConn.current) {
+				wsConn.current.removeEventListener(
 					"message",
 					handleWsStatusListener,
 				);
-				wsConn.current.send(
-					JSON.stringify({
-						type: "getstatus",
-						from: userId,
-						to: contactDetails.user_id,
-					}),
-				);
-				wsConn.current.send(
-					JSON.stringify({
-						type: "sub",
-						from: userId,
-						to: contactDetails.user_id,
-					}),
-				);
-			// });
-		}
-
-		return () =>
-			wsConn.current.removeEventListener(
-				"message",
-				handleWsStatusListener,
-			);
-	}, [contactDetails.user_id, wsConn.current]);
+			}
+		};
+	}, [contactDetails, wsConn.current]);
 
 	return (
 		<StyledChatProfile
@@ -88,25 +86,29 @@ function ChatProfile({ wsConn }) {
 				backgroundColor: themePrimCol,
 			}}
 		>
-			<Avatar
-				css={{
-					width: 50,
-					height: 50,
-					margin: "0 0.75em 0 1em",
-				}}
-			>
-				<AvatarImage
-					src={contactDetails.profile_pic}
-					alt={contactDetails.name}
-				/>
-				<AvatarFallback delayMs={0}>
-					{parseInitials(contactDetails.name)}
-				</AvatarFallback>
-			</Avatar>
-			<div>
-				<p>{contactDetails.name}</p>
-				<p>{lastSeen !== "" && lastSeen}</p>
-			</div>
+			{contactDetails && (
+				<>
+					<Avatar
+						css={{
+							width: 50,
+							height: 50,
+							margin: "0 0.75em 0 1em",
+						}}
+					>
+						<AvatarImage
+							src={contactDetails.profile_pic}
+							alt={contactDetails.name}
+						/>
+						<AvatarFallback delayMs={0}>
+							{parseInitials(contactDetails.name)}
+						</AvatarFallback>
+					</Avatar>
+					<div>
+						<p>{contactDetails.name}</p>
+						<p>{lastSeen !== "" && lastSeen}</p>
+					</div>
+				</>
+			)}
 		</StyledChatProfile>
 	);
 }

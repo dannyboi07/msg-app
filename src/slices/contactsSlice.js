@@ -97,6 +97,7 @@ export const {
 	clearPendingMsgs,
     eraseContactsState
 } = contactsSlice.actions;
+
 export const selectContacts = (state) => state.contacts.contacts;
 export const selectActiveContact = (state) => state.contacts.activeContactId;
 export const selectActiveContactDetails = (state) =>

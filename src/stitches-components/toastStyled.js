@@ -1,5 +1,5 @@
 import { styled, keyframes } from "@stitches/react";
-import { blackA, muave, slate, grassA, blueA, redA } from "@radix-ui/colors";
+import { blackA, muave, slate, grassA, blueA, redA, yellowA } from "@radix-ui/colors";
 import * as ToastPrimitive from "@radix-ui/react-toast";
 
 const VIEWPORT_PADDING = 25;
@@ -36,17 +36,17 @@ const StyledViewport = styled(ToastPrimitive.Viewport, {
 });
 
 const StyledToast = styled(ToastPrimitive.Root, {
-	//border: "1px solid black",
-	backgroundColor: "white",
+    backgroundColor: "white",
 	borderRadius: 6,
 	boxShadow:
-		"hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px",
-	// padding: 15,
+    "hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px",
 	display: "flex",
+	//border: "1px solid black",
 	// gridTemplateAreas: '"graphic-holder title" "graphic-holder description"',
+	// padding: 15,
 	// gridTemplateColumns: "max-content auto",
 	// columnGap: 12,
-    // rowGap: 5,
+	// rowGap: 5,
 	// alignItems: "stretch",
 
 	"@media (prefers-reduced-motion: no-preference)": {
@@ -74,29 +74,33 @@ const StyledToast = styled(ToastPrimitive.Root, {
 
 	"& > div.graphic-ctn": {
 		// gridArea: "graphic-ctn",
-        // height: "100%",
-        // width: "100%",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "0 21px 0 17px",
+		// height: "100%",
+		// width: "100%",
+		display: "flex",
+		alignItems: "center",
+		justifyContent: "center",
+		padding: "0 21px 0 17px",
 
-        "&.suc": {
-            backgroundColor: grassA.grassA9
-        },
+		"&.suc": {
+			backgroundColor: grassA.grassA9,
+		},
 
-        "&.err": {
-            backgroundColor: redA.redA9
-        },
+		"&.err": {
+			backgroundColor: redA.redA9,
+		},
 
-        "&.info": {
-            backgroundColor: blueA.blueA8
+		"&.info": {
+			backgroundColor: blueA.blueA8,
+		},
+
+        "&.warn": {
+            backgroundColor: yellowA.yellowA10
         }
 	},
 
-    "& > div.text-ctn": {
-        padding: "0.925em"
-    },
+	"& > div.text-ctn": {
+		padding: "0.925em",
+	},
 
 	"&.suc": {
 		border: `5px solid ${grassA.grassA9}`,
@@ -106,8 +110,12 @@ const StyledToast = styled(ToastPrimitive.Root, {
 		border: `5px solid ${blueA.blueA8}`,
 	},
 
-    "&.err": {
-        border: `5px solid ${redA.redA9}`
+	"&.err": {
+		border: `5px solid ${redA.redA9}`,
+	},
+
+    "&.warn": {
+        border: `5px solid ${yellowA.yellowA10}`
     }
 });
 
@@ -115,7 +123,7 @@ const StyledTitle = styled(ToastPrimitive.Title, {
 	// gridArea: "title",
 	// marginBottom: "0em",
 	fontWeight: 500,
-    // margin: "12px 12px 0px 0",
+	// margin: "12px 12px 0px 0",
 	// color: slate.slate12,
 	fontSize: "1rem",
 });
@@ -124,13 +132,25 @@ const StyledDescription = styled(ToastPrimitive.Description, {
 	// gridArea: "description",
 	// margin: "0 12px 12px 0",
 	// color: slate.slate11,
-    marginTop: "0.30em",
+	marginTop: "0.30em",
 	fontSize: "0.925rem",
 	lineHeight: 1.3,
 });
 
 const StyledAction = styled(ToastPrimitive.Action, {
 	// gridArea: "action",
+    fontSize: "0.85rem",
+    height: "fit-content",
+    padding: "0.4em 0.75em",
+    alignSelf: "center",
+    marginLeft: "auto",
+    marginRight: "1em",
+    border: 0,
+    borderRadius: 6,
+
+    "&:hover": {
+        cursor: "pointer"
+    }
 });
 
 export const ToastProvider = ToastPrimitive.Provider;

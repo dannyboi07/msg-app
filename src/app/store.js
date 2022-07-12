@@ -5,6 +5,7 @@ import contactsReducer from "../slices/contactsSlice";
 import chatReducer from "../slices/chatSlice";
 import toastReducer from "../slices/toastSlice";
 import themeReducer from "../slices/themeSlice";
+import refreshReducer from "../slices/refreshSlice";
 // import { api } from "../api/apiSlice";
 
 // const userDetails = JSON.parse(localStorage.getItem("msg-app-user-details"));
@@ -25,6 +26,7 @@ export const store = configureStore({
         contacts: contactsReducer,
         chats: chatReducer,
         theme: themeReducer,
+        refresh: refreshReducer
 		// [api.reducerPath]: api.reducer,
 	},
     // preloadedState,

@@ -94,6 +94,16 @@ export const chatSlice = createSlice({
 					: chatsObj,
 			);
 		},
+        setChatOnRefresh: (state) => {
+            return state.map(chatsObj => {
+                return {
+                    ...chatsObj,
+                    messages: [],
+                    queryOffset: 0,
+                    queryDone: false,
+                }
+            })
+        },
 		clearCache: (state, action) => {
 			const newAllMsgsState = [];
 			for (let i = 0; i < state.length; i++) {
@@ -130,6 +140,7 @@ export const {
 	createMsgsChat,
 	incrementQueryOffset,
 	setQueryDone,
+    setChatOnRefresh,
 	clearCache,
     eraseChatState
 } = chatSlice.actions;

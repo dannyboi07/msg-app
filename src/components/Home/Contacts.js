@@ -1,9 +1,14 @@
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useAxios } from "../../hooks/useAxios";
-import { addContact, clearPendingMsgs, updatePendingMsgs } from "../../slices/contactsSlice";
+import { useLazyAxios } from "../../hooks/useLazyAxios";
+import {
+	addContact,
+	clearPendingMsgs,
+	updatePendingMsgs,
+} from "../../slices/contactsSlice";
 import { setActiveContact } from "../../slices/contactsSlice";
 import { selectTheme } from "../../slices/themeSlice";
+import { selectRefresh } from "../../slices/refreshSlice";
 import {
 	StyledContactList,
 	StyledContact,
@@ -20,11 +25,18 @@ import DropMenu from "./DropMenu";
 function Contacts() {
 	const dispatch = useDispatch();
 	const theme = useSelector(selectTheme);
-	const { response, isLoading } = useAxios({
+    const refresh = useSelector(selectRefresh);
+	const { lazyFetch, response, isLoading } = useLazyAxios({
 		method: "GET",
 		url: "/contacts",
 		withCredentials: true,
 	});
+
+    useEffect(() => {
+        if (!refresh) {
+            lazyFetch();
+        }
+    }, [refresh])
 
 	useEffect(() => {
 		if (response) {
@@ -52,6 +64,7 @@ function Contacts() {
 			</div>
 		);
 	}
+
 	return (
 		<StyledContactList
 			css={{
@@ -77,21 +90,27 @@ function Contacts() {
 							key={contact.user_id}
 							contactId={contact.user_id}
 							contactName={contact.name}
-                            nameInitials={nameInitials}
+							nameInitials={nameInitials}
 							contactProfPic={contact.profile_pic}
-							onClick={() =>
-								{dispatch(setActiveContact(contact.user_id))
-                                dispatch(clearPendingMsgs(contact.user_id))}
-							}
+							onClick={() => {
+								dispatch(setActiveContact(contact.user_id));
+								dispatch(clearPendingMsgs(contact.user_id));
+							}}
 						/>
 					);
 				})}
-            <button onClick={() => dispatch(updatePendingMsgs({
-                contactId: 13,
-                text: "kjaskldjfkljalksjdfkalksjdfkjaksfdalsdfkasjldfj kasjd flas  flas df"
-            }))}>
-                Dispatch
-            </button>
+			{/* <button
+				onClick={() =>
+					dispatch(
+						updatePendingMsgs({
+							contactId: 13,
+							text: "kjaskldjfkljalksjdfkalksjdfkjaksfdalsdfkasjldfj kasjd flas  flas df",
+						}),
+					)
+				}
+			>
+				Dispatch
+			</button> */}
 		</StyledContactList>
 	);
 }

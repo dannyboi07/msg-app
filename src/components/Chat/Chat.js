@@ -7,6 +7,7 @@ import {
 	selectQueryOffset,
 	setQueryDone,
 } from "../../slices/chatSlice";
+import { selectRefresh } from "../../slices/refreshSlice";
 import { selectActiveContact } from "../../slices/contactsSlice";
 import { selectTheme } from "../../slices/themeSlice";
 // import { styled } from "@stitches/react";
@@ -19,26 +20,22 @@ import { StyledChat } from "../../stitches-components/homeStyled";
 import ChatProfile from "./ChatProfile";
 import MsgDisplay from "./MsgDisplay";
 
-function Chat({ userId, wsConn }) {
+function Chat({ userId, wsConn, activeContactId }) {
 	const dispatch = useDispatch();
 
 	const [msgInput, setMsgInput] = useState("");
 	const [toScroll, setToScroll] = useState(true); // Notifying child chat comp to pull the scrollbar to the bottom or not
 	const [stopPagin, setStopPagin] = useState(false); // Used by child to stop the scroll listener from triggering after dispatching, i.e used for throttling pagination
 
-	// const msgInpRef = useRef(null);
 	const [msgInpPlc, setMsgInpPlc] = useState("shw-plchldr");
 
-	const activeContactId = useSelector(selectActiveContact);
+	// const activeContactId = useSelector(selectActiveContact);
+	const refresh = useSelector(selectRefresh);
 	const theme = useSelector(selectTheme);
 	const msgCacheExists = useSelector((state) =>
 		state.chats.find((chat) => chat.contactId === activeContactId),
 	);
 	const msgCacheOffset = useSelector(selectQueryOffset(activeContactId));
-
-	// const msgInput = styled(StyledMsgInput, {
-	//     color: theme.
-	// })
 
 	const { lazyFetch, response, isLoading, error } = useLazyAxios({
 		method: "GET",
@@ -95,6 +92,12 @@ function Chat({ userId, wsConn }) {
 		}
 	}, [response]);
 
+	useEffect(() => {
+        if (refresh) {
+            setStopPagin(true);
+        } else if (refresh === false) setStopPagin(false)
+	}, [refresh]);
+
 	function sendMsg(e) {
 		if (msgInput.trim().length > 0) {
 			const msg = {
@@ -104,7 +107,7 @@ function Chat({ userId, wsConn }) {
 				text: msgInput,
 			};
 			wsConn.current.send(JSON.stringify(msg));
-            e.currentTarget.textContent = "";
+			e.currentTarget.textContent = "";
 			setMsgInput("");
 		}
 	}
@@ -124,6 +127,8 @@ function Chat({ userId, wsConn }) {
 			</StyledChat>
 		);
 	}
+
+	// console.log(activeContactId)
 
 	return (
 		<StyledChat

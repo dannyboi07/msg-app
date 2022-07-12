@@ -11,6 +11,7 @@ import {
 } from "../../stitches-components/chatStyled";
 import { selectTheme } from "../../slices/themeSlice";
 import { incrementQueryOffset, selectQueryDone } from "../../slices/chatSlice";
+import { selectRefresh } from "../../slices/refreshSlice";
 import Message from "./Message";
 
 function parseSectionTime(msgTime) {
@@ -51,7 +52,6 @@ function MsgDisplay({
 	const contactMsgs = useSelector((state) => {
 		for (let i = 0; i < state.chats.length; i++) {
 			if (state.chats[i].contactId === activeContactId) {
-				// console.log("messages useselector")
 				return state.chats[i].messages;
 			}
 		}
@@ -59,27 +59,20 @@ function MsgDisplay({
 	});
 	const queryDone = useSelector(selectQueryDone(activeContactId));
 	const theme = useSelector(selectTheme);
+	// const refresh = useSelector(selectRefresh);
 
 	function scroll() {
-        console.log("triggered")
+		console.log("triggered");
 		// If scrollBottom is greater than 200 and scrollBtn is hidden
-        // Added isLoading to the condition to fix the bug of the scroll button from appearing when switching between contacts
+		// Added isLoading to the condition to fix the bug of the scroll button from appearing when switching between contacts
 		if (
-			!scrollDownBtn && !isLoading &&
+			!scrollDownBtn &&
+			!isLoading &&
 			msgCtnRef.current.scrollHeight -
 				msgCtnRef.current.clientHeight -
 				msgCtnRef.current.scrollTop >
 				200
 		) {
-			console.log(
-				"set in if",
-				msgCtnRef.current.scrollHeight,
-				msgCtnRef.current.clientHeight,
-				msgCtnRef.current.scrollTop,
-                msgCtnRef.current.scrollHeight -
-				msgCtnRef.current.clientHeight -
-				msgCtnRef.current.scrollTop
-			);
 			setScrollDownBtn(true);
 		} else if (
 			scrollDownBtn &&
@@ -88,7 +81,6 @@ function MsgDisplay({
 				msgCtnRef.current.scrollTop <
 				200
 		) {
-			console.log("set in else if");
 			setScrollDownBtn(false);
 		}
 
@@ -105,9 +97,9 @@ function MsgDisplay({
 	}
 
 	useLayoutEffect(() => {
+		// console.log(toScroll, isLoading);
 		// Fix scroll to bottom initial mount after initial set of messages are loaded
 		if (toScroll && !isLoading && contactMsgs) {
-			// console.log("useeffect if, pulling hard")
 			scrollToBottomRef.current.scrollIntoView();
 			setToScroll(false);
 		} else if (

@@ -1,8 +1,10 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
+	clearPendingMsgs,
 	selectActiveContact,
 	selectPendingMsgs,
+	setActiveContact,
 } from "../../slices/contactsSlice";
 import { selectTheme } from "../../slices/themeSlice";
 import { styled } from "@stitches/react";
@@ -15,14 +17,8 @@ import {
 } from "../../stitches-components/commonStyled";
 import { setToast } from "../../slices/toastSlice";
 
-function Contact({
-	onClick,
-	contactId,
-	contactName,
-	nameInitials,
-	contactProfPic,
-}) {
-    const dispatch = useDispatch();
+function Contact({ onClick, contactId, contactName, nameInitials, contactProfPic }) {
+	const dispatch = useDispatch();
 	const theme = useSelector(selectTheme);
 	const activeContactId = useSelector(selectActiveContact);
 	const contactPendingMsgs = useSelector(selectPendingMsgs(contactId));
@@ -46,22 +42,29 @@ function Contact({
 		},
 	});
 
-    useEffect(() => {
-        if (contactPendingMsgs.count > 0) {
-            dispatch(setToast({
-                type: "message",
-                message: contactPendingMsgs.text,
-                contactDetails: {
-                    name: contactName,
-                    profile_pic: contactProfPic,
-                }
-            }))
-        };
-
-    }, [contactPendingMsgs])
+	useEffect(() => {
+		if (contactPendingMsgs && contactPendingMsgs.count > 0) {
+			dispatch(
+				setToast({
+					type: "message",
+					message: contactPendingMsgs.text,
+					contactDetails: {
+						name: contactName,
+						profile_pic: contactProfPic,
+					},
+				}),
+			);
+		}
+	}, [contactPendingMsgs]);
 
 	return (
-		<SContact onClick={onClick}>
+		<SContact
+			// onClick={() => {
+			// 	dispatch(setActiveContact(contactId));
+			// 	dispatch(clearPendingMsgs(contactId));
+			// }}
+            onClick={onClick}
+		>
 			<Avatar
 				css={{
 					width: 55,
